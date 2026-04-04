@@ -6138,6 +6138,38 @@ var ALL_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's J
     }
   }
 
+  function getSubmissionDateValidation() {
+    var dateEl = document.getElementById('sub-date');
+    if (!dateEl) return { date: null, reason: 'missing' };
+
+    var value = (dateEl.value || '').trim();
+    if (!value) return { date: null, reason: 'missing' };
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return { date: null, reason: 'invalid' };
+
+    var parts = value.split('/');
+    var month = parseInt(parts[0], 10);
+    var day = parseInt(parts[1], 10);
+    var year = parseInt(parts[2], 10);
+
+    if (isNaN(month) || isNaN(day) || isNaN(year)) return { date: null, reason: 'invalid' };
+    if (month < 1 || month > 12 || year > 2037) return { date: null, reason: 'invalid' };
+
+    var dt = new Date(year, month - 1, day);
+    if (dt.getFullYear() !== year || dt.getMonth() !== month - 1 || dt.getDate() !== day) {
+      return { date: null, reason: 'invalid' };
+    }
+
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (dt < today) return { date: null, reason: 'past' };
+
+    return { date: dt, reason: '' };
+  }
+
+  function getSelectedEventDate() {
+    return getSubmissionDateValidation().date;
+  }
+
   function bindMobileSafePress(button, handler) {
     if (!button) return;
     var lastTouchAt = 0;
