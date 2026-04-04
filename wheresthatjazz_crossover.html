@@ -4916,6 +4916,7 @@
             <button type="button" class="modal-submit-btn" id="sub-revise-btn">? Revise</button>
             <button type="button" class="modal-submit-btn" id="sub-submit-final-btn">Submit</button>
           </div>
+          <div class="submission-destination" id="submission-status-line-preview"></div>
         </div>
       </div><!-- /#sub-preview-panel -->
     </div>
@@ -6097,6 +6098,7 @@ var ALL_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's J
 (function() {
   var submitBtn = document.getElementById('sub-submit-final-btn');
   var statusLine = document.getElementById('submission-status-line');
+  var previewStatusLine = document.getElementById('submission-status-line-preview');
   var modal = document.getElementById('submission-modal');
   var previewPanel = document.getElementById('sub-preview-panel');
   var formPanel = document.getElementById('sub-form-panel');
@@ -6105,6 +6107,10 @@ var ALL_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's J
   function setStatus(message, isError) {
     statusLine.textContent = message;
     statusLine.style.color = isError ? '#d67d84' : '#5a4e2e';
+    if (previewStatusLine) {
+      previewStatusLine.textContent = message;
+      previewStatusLine.style.color = isError ? '#d67d84' : '#5a4e2e';
+    }
   }
 
   function getDateIso() {
