@@ -6320,9 +6320,7 @@ var ALL_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's J
     try {
       var response = await client
         .from(supabaseTools.getSubmissionsTable())
-        .insert([payload])
-        .select('id')
-        .single();
+        .insert([payload]);
 
       if (response.error) {
         throw response.error;
