@@ -524,6 +524,8 @@
     font-weight: bold;
     letter-spacing: 1.3px;
     text-transform: uppercase;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .submission-destination {
     color: #8f7d67;
@@ -5807,10 +5809,33 @@ var ALL_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's J
     return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  function bindMobileSafePress(button, handler) {
+    if (!button) return;
+    var lastTouchAt = 0;
+    button.addEventListener('touchend', function(event) {
+      event.preventDefault();
+      lastTouchAt = Date.now();
+      handler(event);
+    }, { passive: false });
+    button.addEventListener('click', function(event) {
+      if (Date.now() - lastTouchAt < 700) {
+        event.preventDefault();
+        return;
+      }
+      handler(event);
+    });
+  }
+
   var previewBtn = document.getElementById('sub-preview-btn');
   var reviseBtn  = document.getElementById('sub-revise-btn');
-  if (previewBtn) previewBtn.addEventListener('click', showPreview);
-  if (reviseBtn)  reviseBtn.addEventListener('click', showForm);
+  bindMobileSafePress(previewBtn, function(event) {
+    if (event) event.preventDefault();
+    showPreview();
+  });
+  bindMobileSafePress(reviseBtn, function(event) {
+    if (event) event.preventDefault();
+    showForm();
+  });
 
   var subFormPanel = document.getElementById('sub-form-panel');
   if (subFormPanel) {
@@ -6113,6 +6138,23 @@ var ALL_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's J
     }
   }
 
+  function bindMobileSafePress(button, handler) {
+    if (!button) return;
+    var lastTouchAt = 0;
+    button.addEventListener('touchend', function(event) {
+      event.preventDefault();
+      lastTouchAt = Date.now();
+      handler(event);
+    }, { passive: false });
+    button.addEventListener('click', function(event) {
+      if (Date.now() - lastTouchAt < 700) {
+        event.preventDefault();
+        return;
+      }
+      handler(event);
+    });
+  }
+
   function getDateIso() {
     var selectedDate = getSelectedEventDate();
     if (!selectedDate) return '';
@@ -6271,7 +6313,7 @@ var ALL_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's J
     }
   }
 
-  submitBtn.addEventListener('click', function(e) {
+  bindMobileSafePress(submitBtn, function(e) {
     e.preventDefault();
     submitToSupabase();
   });
