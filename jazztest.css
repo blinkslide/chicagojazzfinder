@@ -21,7 +21,19 @@
   *::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, #5a4a34 0%, #34291d 100%);
   }
-  body { font-family: Georgia, 'Times New Roman', serif; background: #0d0b09; color: #e8e0d4; line-height: 1.6; zoom: 1.1; --dayheader-pad-y: 8px; }
+  body { font-family: Georgia, 'Times New Roman', serif; background: #0d0b09; color: #e8e0d4; line-height: 1.6; --dayheader-pad-y: 8px; }
+
+  @media (min-width: 900px) {
+    body { font-size: 1.1rem; }
+    .wrapper,
+    body > .day-block,
+    body > .past-toggle-row,
+    .calendar-search-shell,
+    .footer {
+      max-width: 946px;
+    }
+    #venue-map { height: 408px; }
+  }
 
   .masthead {
     text-align: center; background: #0d0b09; padding: 40px 32px 36px;
