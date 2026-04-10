@@ -1,4 +1,4 @@
-﻿(function() {
+(function() {
 // --- Dynamic venue pill generation ---
   var canonicalizeVenueName = window.canonicalizeVenueName || function(name) {
     var normalized = String(name || '').trim().replace(/\u2019/g, "'");
@@ -100,6 +100,7 @@
   var activeVenues = new Set();
   var bank = document.getElementById('venue-word-bank');
   var allnoneBtn = document.getElementById('allnone-btn');
+  var venueFilterToggle = document.getElementById('venue-filter-toggle');
 
   document.querySelectorAll('.day-block .event').forEach(function(ev) {
     var venueTag = ev.querySelector('.venue-tag');
@@ -184,6 +185,18 @@
       ALL_VENUES.forEach(renderVenuePill);
     }
     updateAllNone();
+    syncVenueBankVisibility();
+  }
+
+  function syncVenueBankVisibility() {
+    var venueFiltersVisible = !venueFilterToggle || venueFilterToggle.checked;
+    if (bank && venueFilterToggle) {
+      bank.classList.toggle('is-collapsed', !venueFiltersVisible);
+      bank.hidden = !venueFiltersVisible;
+    }
+    if (allnoneBtn && venueFilterToggle) {
+      allnoneBtn.hidden = !venueFiltersVisible;
+    }
   }
 
   refreshVenueFilters(false);
@@ -235,7 +248,7 @@
 
   function updateAllNone() {
     if (!allnoneBtn) return;
-    allnoneBtn.textContent = (activeVenues.size === ALL_VENUES.length) ? 'None' : 'All';
+    allnoneBtn.textContent = (activeVenues.size === ALL_VENUES.length) ? 'Select none' : 'Select all';
   }
 
   if (allnoneBtn) {
@@ -249,6 +262,15 @@
       }
       updateAllNone();
       applyFilters();
+    });
+  }
+  if (venueFilterToggle) {
+    if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
+      venueFilterToggle.checked = false;
+    }
+    syncVenueBankVisibility();
+    venueFilterToggle.addEventListener('change', function() {
+      syncVenueBankVisibility();
     });
   }
 
