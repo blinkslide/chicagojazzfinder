@@ -200,19 +200,11 @@
   body > .day-block, body > .past-toggle-row {
     max-width: var(--content-max-width, 860px); margin-left: auto; margin-right: auto; padding: 0 20px;
   }
-  .day-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; padding-top: var(--dayheader-pad-y, 8px); padding-bottom: var(--dayheader-pad-y, 8px); border-bottom: 4px solid #5a4800; position: relative; z-index: 10; background: #0d0b09; }
+  .day-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; padding-top: var(--dayheader-pad-y, 8px); padding-bottom: var(--dayheader-pad-y, 8px); border-bottom: 4px solid #5a4800; position: sticky; top: var(--filterbar-h, 60px); z-index: 10; background: #0d0b09; }
   .day-name { font-size: 1.4em; font-weight: bold; color: #e8e0d4; line-height: 1; }
   .day-date { font-size: 1em; color: #988070; font-style: italic; line-height: 1; }
   #floating-day-header {
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: var(--filterbar-h, 60px);
-    z-index: 90;
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(-6px);
-    transition: opacity 0.12s ease, transform 0.12s ease;
+    display: none; /* CSS sticky on .day-header handles this now */
   }
   #floating-day-header.visible {
     opacity: 1;
@@ -246,7 +238,7 @@
   }
   .past-toggle-actions {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
   }
   .past-toggle-actions.left { justify-content: flex-end; }
   .past-toggle-actions.center { justify-content: center; }
