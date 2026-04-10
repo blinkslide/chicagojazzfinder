@@ -200,6 +200,9 @@
     if (typeof window.updateFilterBarHeight === 'function') {
       requestAnimationFrame(window.updateFilterBarHeight);
     }
+    if (typeof window.updateFloatingDayHeader === 'function') {
+      requestAnimationFrame(window.updateFloatingDayHeader);
+    }
   }
 
   refreshVenueFilters(false);
@@ -247,6 +250,9 @@
       if (anyEventVisible) anyDayVisible = true;
     });
     document.getElementById('no-results').style.display = anyDayVisible ? 'none' : 'block';
+    if (typeof window.updateFloatingDayHeader === 'function') {
+      requestAnimationFrame(window.updateFloatingDayHeader);
+    }
   }
 
   function updateAllNone() {
@@ -1673,6 +1679,9 @@
       var fb = document.getElementById('filter-bar');
       if (!fb) return;
       document.documentElement.style.setProperty('--filterbar-h', Math.ceil(fb.getBoundingClientRect().height) + 'px');
+      if (typeof window.updateFloatingDayHeader === 'function') {
+        requestAnimationFrame(window.updateFloatingDayHeader);
+      }
     }
     window.updateFilterBarHeight = setFilterBarH;
     setFilterBarH();
@@ -1685,6 +1694,109 @@
       });
       filterBarObserver.observe(filterBar);
     }
+  })();
+
+  (function() {
+    var stickyShell = document.createElement('div');
+    stickyShell.id = 'floating-day-header';
+    stickyShell.innerHTML = '<div class="floating-day-inner"></div>';
+    document.body.appendChild(stickyShell);
+    var stickyInner = stickyShell.firstElementChild;
+    var lastKey = '';
+    var ticking = false;
+
+    function getVisibleDayBlocks() {
+      return Array.prototype.filter.call(document.querySelectorAll('.day-block'), function(block) {
+        return !!(block && block.offsetParent !== null);
+      });
+    }
+
+    function getHeader(block) {
+      return block ? block.querySelector('.day-header') : null;
+    }
+
+    function renderStickyHeader(header) {
+      var key = header ? (header.textContent || '').trim() : '';
+      if (!key) {
+        stickyShell.classList.remove('visible');
+        stickyShell.style.transform = '';
+        stickyInner.innerHTML = '';
+        lastKey = '';
+        return null;
+      }
+      if (key !== lastKey) {
+        stickyInner.innerHTML = '';
+        stickyInner.appendChild(header.cloneNode(true));
+        lastKey = key;
+      }
+      stickyShell.classList.add('visible');
+      return stickyInner.firstElementChild;
+    }
+
+    function updateStickyDayHeader() {
+      ticking = false;
+      var filterBar = document.getElementById('filter-bar');
+      if (!filterBar) return;
+      var filterBottom = filterBar.getBoundingClientRect().bottom;
+      var blocks = getVisibleDayBlocks();
+      if (!blocks.length) {
+        renderStickyHeader(null);
+        return;
+      }
+
+      var currentIndex = -1;
+      for (var i = 0; i < blocks.length; i += 1) {
+        var rect = blocks[i].getBoundingClientRect();
+        if (rect.bottom > filterBottom + 1) {
+          currentIndex = i;
+          break;
+        }
+      }
+      if (currentIndex === -1) {
+        renderStickyHeader(null);
+        return;
+      }
+
+      var currentHeader = getHeader(blocks[currentIndex]);
+      if (!currentHeader) {
+        renderStickyHeader(null);
+        return;
+      }
+
+      var currentTop = currentHeader.getBoundingClientRect().top;
+      if (currentTop > filterBottom) {
+        renderStickyHeader(null);
+        return;
+      }
+
+      var stickyHeader = renderStickyHeader(currentHeader);
+      if (!stickyHeader) return;
+
+      var stickyHeight = stickyHeader.getBoundingClientRect().height;
+      var translateY = 0;
+      for (var j = currentIndex + 1; j < blocks.length; j += 1) {
+        var nextHeader = getHeader(blocks[j]);
+        if (!nextHeader) continue;
+        var nextTop = nextHeader.getBoundingClientRect().top - filterBottom;
+        if (nextTop < stickyHeight) {
+          translateY = nextTop - stickyHeight;
+        }
+        break;
+      }
+      stickyShell.style.transform = translateY < 0 ? ('translateY(' + Math.round(translateY) + 'px)') : 'translateY(0)';
+    }
+
+    function requestStickyUpdate() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(updateStickyDayHeader);
+    }
+
+    window.updateFloatingDayHeader = requestStickyUpdate;
+    window.addEventListener('scroll', requestStickyUpdate, { passive: true });
+    window.addEventListener('resize', requestStickyUpdate);
+    window.addEventListener('load', requestStickyUpdate);
+    requestStickyUpdate();
   })();
 
 (function() {
