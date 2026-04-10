@@ -712,8 +712,7 @@
     #action-toggle-row .past-toggle-actions.left,
     #action-toggle-row .past-toggle-actions.center,
     #action-toggle-row .past-toggle-actions.right { justify-content: stretch; }
-    #action-toggle-row .action-stack { width: 100%; max-width: none; gap: 0; }
-    #action-toggle-row .action-note { display: none; }
+    #action-toggle-row .action-stack { width: 100%; max-width: none; gap: 4px; }
     #action-toggle-row .action-btn { width: 100%; min-width: 0; padding: 8px 8px; font-size: 0.6em; letter-spacing: 0.7px; }
     #action-toggle-row .donate-btns { width: 100%; gap: 4px; }
     #action-toggle-row .donate-opt { flex: 1 1 0; min-width: 0; }
@@ -735,8 +734,7 @@
     .past-toggle-row { margin-bottom: 22px; }
     .past-toggle-shell { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .past-toggle-actions.left, .past-toggle-actions.center, .past-toggle-actions.right { justify-content: stretch; }
-    .action-stack { width: 100%; max-width: none; gap: 0; }
-    #action-toggle-row .action-note { display: none; }
+    .action-stack { width: 100%; max-width: none; gap: 4px; }
     .action-btn { width: 100%; min-width: 0; padding: 8px 10px; font-size: 0.62em; letter-spacing: 0.8px; }
     .donate-btns { width: 100%; gap: 4px; }
     .donate-opt { flex: 1 1 0; min-width: 0; }
