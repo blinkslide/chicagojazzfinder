@@ -45,7 +45,7 @@
 
   /* Filter bar */
   #filter-bar {
-    position: sticky; top: 0; z-index: 100;
+    position: -webkit-sticky; position: sticky; top: 0; z-index: 100;
     background: #181410; color: #e8e0d4;
     padding: 8px 20px 10px; border-bottom: 2px solid #221e19;
     display: flex; align-items: center; justify-content: center; gap: 20px;
@@ -185,13 +185,13 @@
 
   #venue-map { height: 380px; border-radius: 6px; border: 1px solid #221e19; margin-bottom: 32px; cursor: pointer; display: none; z-index: 1; }
 
-  .day-block { margin-bottom: 36px; }
+  .day-block { margin-bottom: 36px; scroll-margin-top: calc(var(--filterbar-h, 60px) + var(--dayheader-gap, 8px) + 8px); }
 
   /* day-blocks and other sections outside the wrapper (body-level) */
   body > .day-block, body > .past-toggle-row {
     max-width: 860px; margin-left: auto; margin-right: auto; padding: 0 20px;
   }
-  .day-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; padding-top: 10px; padding-bottom: 6px; border-bottom: 4px solid #5a4800; position: sticky; top: calc(var(--filterbar-h, 60px) + 2px); z-index: 50; background: #0d0b09; }
+  .day-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; padding-top: 10px; padding-bottom: 6px; border-bottom: 4px solid #5a4800; position: -webkit-sticky; position: sticky; top: calc(var(--filterbar-h, 60px) + var(--dayheader-gap, 8px)); z-index: 50; background: #0d0b09; }
   .day-name { font-size: 1.4em; font-weight: bold; color: #e8e0d4; }
   .day-date { font-size: 1em; color: #988070; font-style: italic; }
 
@@ -711,7 +711,7 @@
     .donate-btns .action-btn { width: 100%; padding: 8px 6px; font-size: 0.6em; }
     .donate-sub { display: none; }
     .filter-toggle-inline { font-size: 0.62em; gap: 5px; }
-    .vf-btn { font-size: 0.64em; padding: 2px 8px; border-radius: 11px; }
+    .vf-btn { font-size: 0.61em; padding: 1px 7px; border-radius: 10px; border-width: 1.25px; }
     .support-grid, .field-grid, .field-row { grid-template-columns: 1fr; }
     .contact-method-row { grid-template-columns: 1fr; }
     .time-split { grid-template-columns: 1fr 1fr 1fr; }
