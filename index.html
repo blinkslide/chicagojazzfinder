@@ -19,24 +19,26 @@
   <div class="bar-jazz">Chicago Jazz Finder</div>
   <div class="bar-location">Where's That Jazz?</div>
 </div>
-<div id="filter-bar">
-  <div class="filter-left">
-    <div class="filter-top-row">
-      <label class="filter-toggle-inline" for="venue-filter-toggle">
-        <input id="venue-filter-toggle" type="checkbox" checked>
-        <span>Filter by venue</span>
-      </label>
-      <button class="util-btn" id="allnone-btn">None</button>
-      <button class="util-btn" id="free-toggle">Free only</button>
-      <button class="util-btn" id="reset-btn">Reset</button>
-      <select id="date-jump" class="util-select">
-        <option value="">? Date</option>
-      </select>
-      <button class="map-sq-btn" id="map-toggle-btn">&#x1F4CD;<span>Map</span></button>
+  <div id="filter-bar">
+    <div class="filter-left">
+      <div class="filter-top-row">
+        <button class="util-btn" id="free-toggle">Free only</button>
+        <button class="util-btn" id="reset-btn">Reset</button>
+        <select id="date-jump" class="util-select">
+          <option value="">? Date</option>
+        </select>
+        <button class="map-sq-btn" id="map-toggle-btn">&#x1F4CD;<span>Map</span></button>
+      </div>
+      <div class="filter-venue-row">
+        <label class="filter-toggle-inline" for="venue-filter-toggle">
+          <input id="venue-filter-toggle" type="checkbox" checked>
+          <span>Filter by venue</span>
+        </label>
+        <button class="util-btn" id="allnone-btn">None</button>
+      </div>
+      <div class="venue-word-bank" id="venue-word-bank"></div>
     </div>
-    <div class="venue-word-bank" id="venue-word-bank"></div>
-  </div>
-</div><div class="wrapper">
+  </div><div class="wrapper">
   <div id="venue-map"></div>
   <div id="no-results">No events match the current filters.</div>
   <div class="calendar-search-shell">
