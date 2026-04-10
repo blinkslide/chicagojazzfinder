@@ -197,6 +197,12 @@
     if (allnoneBtn && venueFilterToggle) {
       allnoneBtn.hidden = !venueFiltersVisible;
     }
+    // Update --filterbar-h synchronously now that the bank visibility has changed,
+    // so sticky day headers reposition immediately without waiting for a rAF.
+    var _fb = document.getElementById('filter-bar');
+    if (_fb) {
+      document.documentElement.style.setProperty('--filterbar-h', Math.ceil(_fb.getBoundingClientRect().height) + 'px');
+    }
     if (typeof window.updateFilterBarHeight === 'function') {
       requestAnimationFrame(window.updateFilterBarHeight);
     }
