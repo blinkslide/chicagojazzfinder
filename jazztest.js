@@ -1738,6 +1738,7 @@
       var filterBar = document.getElementById('filter-bar');
       if (!filterBar) return;
       var filterBottom = filterBar.getBoundingClientRect().bottom;
+      stickyShell.style.top = Math.round(filterBottom) + 'px';
       var blocks = getVisibleDayBlocks();
       if (!blocks.length) {
         renderStickyHeader(null);
