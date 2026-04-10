@@ -197,6 +197,9 @@
     if (allnoneBtn && venueFilterToggle) {
       allnoneBtn.hidden = !venueFiltersVisible;
     }
+    if (typeof window.updateFilterBarHeight === 'function') {
+      requestAnimationFrame(window.updateFilterBarHeight);
+    }
   }
 
   refreshVenueFilters(false);
@@ -1665,14 +1668,15 @@
 // -- End Submission Preview -------------------------------
 
 // Set sticky day-header offset to filter bar height
-(function() {
-  function setFilterBarH() {
-    var fb = document.getElementById('filter-bar');
-    if (fb) document.documentElement.style.setProperty('--filterbar-h', fb.offsetHeight + 'px');
-  }
-  setFilterBarH();
-  window.addEventListener('resize', setFilterBarH);
-})();
+  (function() {
+    function setFilterBarH() {
+      var fb = document.getElementById('filter-bar');
+      if (fb) document.documentElement.style.setProperty('--filterbar-h', fb.offsetHeight + 'px');
+    }
+    window.updateFilterBarHeight = setFilterBarH;
+    setFilterBarH();
+    window.addEventListener('resize', setFilterBarH);
+  })();
 
 (function() {
   var actionRow = document.getElementById('action-toggle-row');
