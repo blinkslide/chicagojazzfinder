@@ -1667,15 +1667,24 @@
 })();
 // -- End Submission Preview -------------------------------
 
-// Set sticky day-header offset to filter bar height
+  // Set sticky day-header offset to filter bar height
   (function() {
     function setFilterBarH() {
       var fb = document.getElementById('filter-bar');
-      if (fb) document.documentElement.style.setProperty('--filterbar-h', fb.offsetHeight + 'px');
+      if (!fb) return;
+      document.documentElement.style.setProperty('--filterbar-h', Math.ceil(fb.getBoundingClientRect().height) + 'px');
     }
     window.updateFilterBarHeight = setFilterBarH;
     setFilterBarH();
     window.addEventListener('resize', setFilterBarH);
+    window.addEventListener('load', setFilterBarH);
+    var filterBar = document.getElementById('filter-bar');
+    if (filterBar && typeof ResizeObserver !== 'undefined') {
+      var filterBarObserver = new ResizeObserver(function() {
+        requestAnimationFrame(setFilterBarH);
+      });
+      filterBarObserver.observe(filterBar);
+    }
   })();
 
 (function() {
