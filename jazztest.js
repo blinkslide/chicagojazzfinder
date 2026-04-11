@@ -1010,6 +1010,7 @@
   var pastWrapper = document.getElementById('past-wrapper');
   var pastToggleBtn = document.getElementById('past-toggle');
   var pastToggleTop = document.getElementById('past-toggle-top');
+  var pastVisible = false;
 
   function getTodayStr() {
     var d = new Date();
@@ -1210,6 +1211,12 @@
 (function() {
   var VENUE_COLORS = window.JAZZ_VENUE_COLORS || {};
   var DEFAULT_COLOR = "#5a4e3a";
+  var getEditableValue = window.getEditableValue || function(el) {
+    return el ? String(el.value || '').trim() : '';
+  };
+  var markSampleState = window.markSampleState || function() {};
+  var syncVisibleTimeFromBridge = window.syncVisibleTimeFromBridge;
+  var syncVenueBridge = window.syncVenueBridge;
 
   function getVenueColor(name) {
     if (!name) return DEFAULT_COLOR;
@@ -1625,7 +1632,7 @@
   }
 
   var previewBtn = document.getElementById('sub-preview-btn');
-  var reviseBtn  = document.getElementById('sub-revise-btn');
+  var reviseBtn  = document.getElementById('sub-revise-btn') || document.getElementById('sub-revise-btn-hidden');
   bindMobileSafePress(previewBtn, function(event) {
     if (event) event.preventDefault();
     showPreview();
@@ -1838,12 +1845,8 @@
             '<button type="button" id="donate-toggle-btn" class="action-btn support" onclick="var p=this.parentNode;var btn=this;btn.style.display=\'none\';p.querySelector(\'.donate-btns\').style.display=\'flex\';setTimeout(function(){p.querySelector(\'.donate-btns\').style.display=\'none\';btn.style.display=\'\';},8000);">Donate</button>' +
             '<div class="donate-btns" style="display:none">' +
               '<div class="donate-opt">' +
-                '<a href="https://venmo.com/u/cjfinder" target="_blank" rel="noopener" class="action-btn support">Venmo</a>' +
-                '<div class="action-note donate-sub">(app only)</div>' +
-              '</div>' +
-              '<div class="donate-opt">' +
-                '<a href="https://ko-fi.com/chicagojazzfinder" target="_blank" rel="noopener" class="action-btn support">Other</a>' +
-                '<div class="action-note donate-sub">Google/Apple Pay, CashApp, PayPal</div>' +
+                '<a href="https://ko-fi.com/chicagojazzfinder" target="_blank" rel="noopener" class="action-btn support">Ko-Fi</a>' +
+                '<div class="action-note donate-sub">Accepts Apple Pay, Google Pay, Cashapp, Venmo, Paypal, and Cards</div>' +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -2101,12 +2104,25 @@
   })();
 
 (function() {
-  var submitBtn = document.getElementById('sub-submit-final-btn');
-  if (submitBtn && submitBtn.parentNode) {
-    var cleanSubmitBtn = submitBtn.cloneNode(true);
-    submitBtn.parentNode.replaceChild(cleanSubmitBtn, submitBtn);
-    submitBtn = cleanSubmitBtn;
+  function resetBoundButton(button) {
+    if (!button || !button.parentNode) return button;
+    var cleanButton = button.cloneNode(true);
+    button.parentNode.replaceChild(cleanButton, button);
+    return cleanButton;
   }
+
+  var submitButtons = [
+    resetBoundButton(document.getElementById('sub-submit-final-btn')),
+    resetBoundButton(document.getElementById('sub-submit-final-btn-hidden'))
+  ].filter(function(button) {
+    return !!button;
+  });
+  var submitButtonStates = submitButtons.map(function(button) {
+    return {
+      button: button,
+      originalLabel: button.textContent
+    };
+  });
   var statusLine = document.getElementById('submission-status-line');
   var previewStatusLine = document.getElementById('submission-status-line-preview');
   var modal = document.getElementById('submission-modal');
@@ -2131,7 +2147,7 @@
   var SUBMISSION_GUARD_WINDOW_MS = 60 * 60 * 1000;
   var SUBMISSION_GUARD_MAX_SUBMISSIONS = 10;
   var SUBMISSION_MIN_FILL_MS = 8000;
-  if (!submitBtn || !statusLine) return;
+  if (!submitButtons.length || !statusLine) return;
 
   function setStatus(message, isError) {
     statusLine.textContent = message;
@@ -2140,6 +2156,29 @@
       previewStatusLine.textContent = message;
       previewStatusLine.style.color = isError ? '#f0a0a8' : '#b7d9e6';
     }
+  }
+
+  function setInlineSubmitError(message) {
+    var err = document.getElementById('sub-preview-error');
+    if (err) err.textContent = message || '';
+  }
+
+  function setSubmitButtonsDisabled(disabled) {
+    submitButtonStates.forEach(function(entry) {
+      entry.button.disabled = disabled;
+    });
+  }
+
+  function setSubmitButtonsLabel(label) {
+    submitButtonStates.forEach(function(entry) {
+      entry.button.textContent = label;
+    });
+  }
+
+  function restoreSubmitButtonLabels() {
+    submitButtonStates.forEach(function(entry) {
+      entry.button.textContent = entry.originalLabel;
+    });
   }
 
   function nowMs() {
@@ -2425,6 +2464,7 @@
   async function submitToSupabase() {
     var supabaseTools = window.CJFSupabase;
     if (!supabaseTools) {
+      setInlineSubmitError('Submission service is unavailable right now.');
       setStatus('Submission service is unavailable right now.', true);
       return;
     }
@@ -2432,6 +2472,7 @@
     var client = supabaseTools.getClient();
     if (!client) {
       console.error(supabaseTools.getConfigError());
+      setInlineSubmitError('Submission service is unavailable right now.');
       setStatus('Submission service is unavailable right now.', true);
       return;
     }
@@ -2448,20 +2489,22 @@
       }
       previewPanel.style.display = 'none';
       formPanel.style.display = '';
+      setInlineSubmitError(submissionDateCheck.reason === 'past' ? 'Please enter a future date.' : 'Please enter a valid date as mm/dd/yy.');
       setStatus(submissionDateCheck.reason === 'past' ? 'Please enter a future date.' : 'Please enter a valid date as mm/dd/yy.', true);
       return;
     }
 
     var submissionGuardError = getSubmissionGuardError();
     if (submissionGuardError) {
+      setInlineSubmitError(submissionGuardError);
       setStatus(submissionGuardError, true);
       return;
     }
 
     var payload = buildPayload();
-    submitBtn.disabled = true;
-    var originalLabel = submitBtn.textContent;
-    submitBtn.textContent = 'Submitting...';
+    setInlineSubmitError('');
+    setSubmitButtonsDisabled(true);
+    setSubmitButtonsLabel('Submitting...');
     setStatus('Submitting your event...', false);
     recordSubmissionAttempt();
 
@@ -2484,10 +2527,11 @@
         }, 500);
       }
     } catch (error) {
+      setInlineSubmitError(getFriendlySubmissionError(error));
       setStatus(getFriendlySubmissionError(error), true);
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalLabel;
+      setSubmitButtonsDisabled(false);
+      restoreSubmitButtonLabels();
     }
   }
 
@@ -2501,13 +2545,16 @@
       submitToSupabase();
     } catch (error) {
       console.error(error);
-      var err = document.getElementById('sub-preview-error');
-      if (err) err.textContent = error.message || 'Something blocked the submission form.';
+      setInlineSubmitError(error.message || 'Something blocked the submission form.');
       setStatus('Something blocked the submission form.', true);
     }
   }
 
-  submitBtn.onclick = handleSubmitPress;
+  window.CJFHandleSubmitPress = handleSubmitPress;
+  submitButtons.forEach(function(button) {
+    button.dataset.jsBound = 'true';
+    bindMobileSafePress(button, handleSubmitPress);
+  });
   if (formPanel) {
     formPanel.addEventListener('input', noteSubmissionInteraction);
     formPanel.addEventListener('change', noteSubmissionInteraction);
@@ -2982,4 +3029,3 @@
 
   renderApprovedSubmissions();
 })();
-
