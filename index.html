@@ -12,7 +12,7 @@
 <script src="supabase/supabase-config.js"></script>
 <script src="supabase/supabase-client.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link rel="stylesheet" href="jazztest.css?v=20260410i">
+<link rel="stylesheet" href="jazztest.css?v=20260411a">
 </head>
 <body>
 <div class="masthead">
@@ -68,12 +68,8 @@
             <button type="button" id="donate-toggle-btn" class="action-btn support" onclick="var p=this.parentNode;var btn=this;btn.style.display='none';p.querySelector('.donate-btns').style.display='flex';setTimeout(function(){p.querySelector('.donate-btns').style.display='none';btn.style.display='';},8000);">Donate</button>
             <div class="donate-btns" style="display:none">
               <div class="donate-opt">
-                <a href="https://venmo.com/u/cjfinder" target="_blank" rel="noopener" class="action-btn support">Venmo</a>
-                <div class="action-note donate-sub">(app only)</div>
-              </div>
-              <div class="donate-opt">
-                <a href="https://ko-fi.com/chicagojazzfinder" target="_blank" rel="noopener" class="action-btn support">Other</a>
-                <div class="action-note donate-sub">Google/Apple Pay, CashApp, PayPal</div>
+                <a href="https://ko-fi.com/chicagojazzfinder" target="_blank" rel="noopener" class="action-btn support">Ko-Fi</a>
+                <div class="action-note donate-sub">Accepts Apple Pay, Google Pay, Cashapp, Venmo, Paypal, and Cards</div>
               </div>
             </div>
           </div>
@@ -6621,7 +6617,7 @@
 
         <div class="submission-cta">
           <div class="submission-actions">
-            <button type="button" class="modal-submit-btn" id="sub-submit-final-btn">Submit</button>
+            <button type="button" class="modal-submit-btn" id="sub-submit-final-btn" onclick="if(this.dataset.jsBound==='true')return; if(window.validateSubmissionForm && !window.validateSubmissionForm()) return; var msg='Submission handler is still loading. Please refresh and try again.'; var err=document.getElementById('sub-preview-error'); if(err) err.textContent=''; var status=document.getElementById('submission-status-line'); if(status){status.textContent=msg;status.style.color='#f0a0a8';} var preview=document.getElementById('submission-status-line-preview'); if(preview){preview.textContent=msg;preview.style.color='#f0a0a8';}">Submit</button>
             <div id="sub-preview-error" class="form-inline-error" aria-live="polite"></div>
           </div>
           <div class="submission-destination" id="submission-status-line"></div>
@@ -6641,7 +6637,7 @@
         <div class="submission-cta">
           <div class="submission-actions">
             <button type="button" class="modal-submit-btn" id="sub-revise-btn-hidden">Back to tile</button>
-            <button type="button" class="modal-submit-btn" id="sub-submit-final-btn-hidden">Submit</button>
+            <button type="button" class="modal-submit-btn" id="sub-submit-final-btn-hidden" onclick="if(this.dataset.jsBound==='true')return; if(window.validateSubmissionForm && !window.validateSubmissionForm()) return; var msg='Submission handler is still loading. Please refresh and try again.'; var err=document.getElementById('sub-preview-error'); if(err) err.textContent=''; var status=document.getElementById('submission-status-line'); if(status){status.textContent=msg;status.style.color='#f0a0a8';} var preview=document.getElementById('submission-status-line-preview'); if(preview){preview.textContent=msg;preview.style.color='#f0a0a8';}">Submit</button>
           </div>
           <div class="submission-destination" id="submission-status-line-preview"></div>
         </div>
@@ -6649,7 +6645,7 @@
     </div>
   </div>
 </div>
-<script src="jazztest.js?v=20260410i"></script>
+<script src="jazztest.js?v=20260411e"></script>
 </body>
 </html>
 
