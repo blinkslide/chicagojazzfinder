@@ -3102,6 +3102,7 @@
     var latestIntakeByKey = {};
     var latestStaticManagedBySlotKey = {};
     var rowsToRender = [];
+    var fallbackStaticRows = [];
 
     result.data.forEach(function(row) {
       if (row.source === 'jazztest_static') {
@@ -3159,7 +3160,11 @@
         }
       }
       if (!entry) {
-        console.warn('Could not match jazztest_static row to a hardcoded slot', row);
+        if (row.status === 'approved' || row.status === 'published') {
+          fallbackStaticRows.push(row);
+        } else {
+          console.warn('Could not match jazztest_static row to a hardcoded slot', row);
+        }
         return;
       }
       if (row.status === 'approved' || row.status === 'published') {
@@ -3167,6 +3172,10 @@
       } else {
         entry.node.dataset.supabaseSuppressed = 'true';
       }
+    });
+
+    fallbackStaticRows.forEach(function(row) {
+      rowsToRender.push(row);
     });
 
     rowsToRender.forEach(function(row) {
