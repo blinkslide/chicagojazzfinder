@@ -2807,6 +2807,42 @@
     });
   }
 
+  function parseGcalTime(str) {
+    var match = /(\d{1,2}):(\d{2})\s*(am|pm)/i.exec(String(str || '').trim());
+    if (!match) return null;
+    var hour = parseInt(match[1], 10);
+    var minute = parseInt(match[2], 10);
+    var ampm = match[3].toLowerCase();
+    if (ampm === 'pm' && hour !== 12) hour += 12;
+    if (ampm === 'am' && hour === 12) hour = 0;
+    return { h: hour, m: minute };
+  }
+
+  function gcalDateStamp(date, hour, minute) {
+    return String(date || '').replace(/-/g, '') + 'T' + String(hour).padStart(2, '0') + String(minute).padStart(2, '0') + '00';
+  }
+
+  function buildGcalButtonHtml(row, venue, title, time, desc) {
+    var parsed = parseGcalTime(time);
+    var date = String(row && row.event_date || '').trim();
+    if (!parsed || !date) return '';
+    var endHour = parsed.h + 1;
+    var endMinute = parsed.m + 30;
+    if (endMinute >= 60) {
+      endHour += 1;
+      endMinute -= 60;
+    }
+    var location = (venue ? venue + ', Chicago, IL' : 'Chicago, IL');
+    var gcalTitle = title + (venue ? ' @ ' + venue : '');
+    var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+      + '&text=' + encodeURIComponent(gcalTitle)
+      + '&dates=' + gcalDateStamp(date, parsed.h, parsed.m) + '%2F' + gcalDateStamp(date, endHour, endMinute)
+      + '&details=' + encodeURIComponent(desc || '')
+      + '&location=' + encodeURIComponent(location);
+    var calIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    return '<a href="' + escapeAttr(url) + '" target="_blank" rel="noopener" class="gcal-btn">' + calIcon + '+GCAL</a>';
+  }
+
   function buildEventInnerHtml(row) {
     var venue = normalizeVenueName(row.venue_name) || String(row.venue_name || '').trim() || 'Venue TBA';
     var title = String(row.event_title || '').trim();
@@ -2817,11 +2853,13 @@
     var price = formatPrice(row);
     var sharedColors = window.JAZZ_VENUE_COLORS || {};
     var venueTagClass = (row.venue_is_custom && !sharedColors[venue]) ? 'venue-tag misc-preview' : 'venue-tag';
+    var gcalHtml = buildGcalButtonHtml(row, venue, title || '(untitled)', time, desc);
 
     var metaHtml = '<div class="event-meta">' +
       '<span class="' + venueTagClass + '" style="background:' + escapeAttr(color) + '">' + escapeHtml(venue) + '</span>' +
       (time ? '<span class="event-time">' + escapeHtml(time) + '</span>' : '') +
       (price ? '<span class="event-price">' + escapeHtml(price) + '</span>' : '') +
+      gcalHtml +
       '</div>';
 
     var actHtml = '<div class="event-act">';
