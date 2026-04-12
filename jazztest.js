@@ -2804,8 +2804,129 @@
       delete entry.node.dataset.submissionId;
       delete entry.node.dataset.supabaseSuppressed;
       delete entry.node.dataset.supabaseManaged;
+      var block = entry.node.closest('.day-block');
+      applyEditorialBlurbToNode(entry.node, block ? (block.dataset.date || '') : '');
     });
   }
+
+  var EDITORIAL_BLURB_OVERRIDES = {
+    "2026-03-26||elastic arts||improvised music series: bill harris, al kolot (becky grajeda), brian mcfarlane": "Improvised-music bill spanning percussion, electronics, and performance art.",
+    "2026-03-26||jazz showcase||steve turre quintet": "Legendary trombonist and shell player leading a hard-swinging quintet.",
+    "2026-03-26||le piano||ben paterson organ trio (feat. bobby broom)": "Soul-jazz organ trio with guitarist Bobby Broom.",
+    "2026-03-27||constellation||tom skinner w/ ben lamar gay, joshua abrams & mike reed": "Improvised quartet with Tom Skinner, Ben LaMar Gay, Joshua Abrams, and Mike Reed.",
+    "2026-03-27||elastic arts||airmw presents: takashi shallow 'recent projects' + ren langyi": "Experimental set from Takashi Shallow with Ren Langyi.",
+    "2026-03-27||le piano||chris white quartet": "Resident jazz quartet led by pianist Chris White.",
+    "2026-03-27||lemon||superfloss": "Disco, funk, and pop covers with a big-band feel.",
+    "2026-03-28||elastic arts||aacm + dal niente": "AACM and Ensemble Dal Niente join forces for a large-ensemble program.",
+    "2026-03-28||le piano||petra van nuis & dennis luxion": "Intimate vocal-piano set from Petra van Nuis and Dennis Luxion.",
+    "2026-03-28||lemon||javier red quartet": "Original modern jazz rooted in post-bop and West African rhythm.",
+    "2026-03-28||lemon||maxx mcgathey orchestra": "Late-night big band blending jazz, contemporary classical, and cinematic writing.",
+    "2026-03-29||constellation||shabaka w/ joy guidry": "Exploratory duo set from Shabaka and Joy Guidry.",
+    "2026-03-30||constellation||roscoe mitchell": "Rare Chicago appearance by AACM co-founder Roscoe Mitchell.",
+    "2026-03-31||elastic arts||line of sight: a trans day of visibility poetry cabaret": "Poetry cabaret marking Trans Day of Visibility.",
+    "2026-03-31||the whistler||relax attack jazz series: juliette gardiner quintet": "Jazz quintet in The Whistler's weekly series.",
+    "2026-04-01||constellation||rich(ard) dawson w/ wendy eisenberg": "Word-rich folk experimentalism from Richard Dawson, with Wendy Eisenberg.",
+    "2026-04-01||elastic arts||fugue state: phase 3 - film screening program 1": "Experimental film and expanded-cinema program.",
+    "2026-04-01||le piano||liz mandeville's bourbon & blues review": "Chicago blues and roots set led by Liz Mandeville.",
+    "2026-04-02||elastic arts||improvised music series: whisker + carol genetti + keefe jackson / jim baker / julian kirshner": "Three-act improvised-music bill featuring Whisker, Carol Genetti, and a Keefe Jackson trio.",
+    "2026-04-03||constellation||rosenau & sanborn": "Improvised guitar-and-electronics duo from Chris Rosenau and Nick Sanborn.",
+    "2026-04-03||elastic arts||'too tender headed' visual gallery opening": "Gallery opening for Harlem West's Too Tender Headed exhibition.",
+    "2026-04-03||fulton street collective||jazz: america's music - art opening": "Jazz-inspired group art show spanning icons from Armstrong to Sun Ra.",
+    "2026-04-03||lemon||the rind": "Arabic-funk collective with jazz-minded improvisers.",
+    "2026-04-04||elastic arts||dark matter series: kwami winfield, d. jean-baptiste, femi shonuga-fleming, naturalblkinvention + ilovecomputergirl (dj)": "BLK Noise night of experimental electronics and sound art.",
+    "2026-04-04||le piano||sam robinson - album release party": "Album-release set from Chicago saxophonist Sam Robinson.",
+    "2026-04-04||lemon||the squeeze": "Chicago-rooted house-music night.",
+    "2026-04-05||constellation||kelly moran": "Experimental piano set from composer Kelly Moran.",
+    "2026-04-05||elastic arts||elastro: apologist + itsï ramirez + erψn temp3st": "Electronic and experimental bill with apologist, Itsï Ramirez, and erψn temp3st.",
+    "2026-04-06||elastic arts||homeroom residency: tim daisy - chrome yellow (new scores + conductions)": "Percussion-led new-music set from Tim Daisy's Monday residency.",
+    "2026-04-08||elastic arts||fugue state: phase 3 - film screening program 2": "Second night of Fugue State's experimental film program.",
+    "2026-04-08||fulton street collective||the cogstet + katja ji trio": "Experimental-jazz double bill led by Matthew Coglianese and Katja Ji.",
+    "2026-04-08||jazz showcase||wdcb 90.9fm presents: orbert davis quintet": "Chicago trumpet leader Orbert Davis brings a big-hearted straight-ahead set.",
+    "2026-04-09||elastic arts||improvised music series: alana detonators + julian pujol qualls / elijah bradford / marcos morales": "Two exploratory sets from Alana Detonators and a Julian Pujol Qualls trio.",
+    "2026-04-10||constellation||emily rach beisel's 'sumptuous branching' w/ mute duo": "Album-release set of bass clarinet, electronics, and voice, with Mute Duo opening.",
+    "2026-04-10||green mill||tribute to george freeman feat. bernard 'pretty' purdie": "Tribute to Chicago guitar legend George Freeman, featuring Bernard Purdie.",
+    "2026-04-11||constellation||em spel (record release) with edith judith": "Record-release show of flute-led experimental pop with Edith Judith.",
+    "2026-04-12||winter's jazz club||tierney sutton & tamir hendelman - debut!": "Intimate duo set from vocalist Tierney Sutton and pianist Tamir Hendelman.",
+    "2026-04-15||constellation||mandala makers festival: jugalbandhi + v.v.s. murari, ashwani shankar & sai giridar": "Indian classical improvisers in a cross-tradition jugalbandhi.",
+    "2026-04-16||constellation||shi-an costello's alloy prepared piano project": "Prepared-piano showcase spanning experimental and eclectic repertoire.",
+    "2026-04-16||elastic arts||imminence festival - night one: vandermark/locks/corsano + jason roebke quartet": "Festival opener featuring Vandermark, Locks, Corsano, and the Jason Roebke Quartet.",
+    "2026-04-17||constellation||korean music fridays (kpac)": "Traditional and contemporary Korean music presented by KPAC.",
+    "2026-04-18||elastic arts||imminence festival - night three: bill mackay & katinka kleijn + rempis 4tet + jim baker (solo)": "Festival finale with Bill MacKay, Katinka Kleijn, Rempis 4tet, and Jim Baker.",
+    "2026-04-18||hungry brain||maurice louca quartet": "Maurice Louca's quartet blends jazz, Arabic traditions, and free improvisation.",
+    "2026-04-19||constellation||frequency series: duo aequalis (shannon lotti, flute / stephen eckert, piano)": "Contemporary flute-and-piano program from Duo Aequalis.",
+    "2026-04-21||fulton street collective||jamie demeny's 4-player game - album release": "Album-release set from Jamie Demeny's 4-Player Game.",
+    "2026-04-21||lemon||latin jam": "Monthly Latin jam rooted in Afro-Caribbean and Central American traditions.",
+    "2026-04-22||constellation||stephan crump's slow water": "Earth Day set from bassist-composer Stephan Crump's Slow Water.",
+    "2026-04-22||winter's jazz club||spotlight on: maud hixson": "Conversation and cabaret with vocalist Maud Hixson.",
+    "2026-04-23||elastic arts||improvised music series: violet booleans + jackson/maunu/dammann/little cloud fawcett": "Experimental double bill with Violet Booleans and a first-time improvised quartet.",
+    "2026-04-23||jazz showcase||winard harper & jeli posse": "Jazz set drawing on West African griot traditions.",
+    "2026-04-24||constellation||gabriel kahane x roomful of teeth": "Composer Gabriel Kahane teams up with Roomful of Teeth.",
+    "2026-04-24||elastic arts||mrs. hands (nicole alonso) album release w/ hedra rowan & jeff goulet": "Album-release set of electroacoustic sound from Mrs. Hands, with two openers.",
+    "2026-05-01||symphony center||mike reed's chicago inspirations": "Mike Reed leads a Chicago all-star ensemble celebrating local jazz lineages.",
+    "2026-05-01||jazz at logan||isaiah collier: in tribute to the classics of john coltrane": "Isaiah Collier and The Chosen Few pay tribute to John Coltrane."
+  };
+
+  function normalizeBlurbKeyPart(value) {
+    return String(value || '')
+      .replace(/[–—]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  function buildEditorialBlurbKey(eventDate, venue, title) {
+    return [
+      normalizeBlurbKeyPart(eventDate),
+      normalizeBlurbKeyPart(venue),
+      normalizeBlurbKeyPart(title)
+    ].join('||');
+  }
+
+  function sanitizeEditorialBlurb(desc) {
+    var text = String(desc || '').replace(/\s+/g, ' ').trim();
+    if (!text) return '';
+    var parts = text.split(/\s*(?:[;•]|\.(?:\s+|$))\s*/).map(function(part) {
+      return String(part || '').trim();
+    }).filter(Boolean);
+    if (!parts.length) return text;
+    var filtered = parts.filter(function(part) {
+      return !(
+        /\b(?:doors?|reservations?|tickets?|admission|cover|suggested|donation|pwyc|pay what you can)\b/i.test(part) ||
+        /\$\s*\d/.test(part) ||
+        /\bfree\b/i.test(part) ||
+        /\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(part)
+      );
+    });
+    var cleaned = (filtered.length ? filtered : parts).join('. ').trim();
+    if (cleaned && !/[.!?]$/.test(cleaned)) cleaned += '.';
+    return cleaned;
+  }
+
+  function getEditorialBlurb(eventDate, venue, title, desc) {
+    var key = buildEditorialBlurbKey(eventDate, venue, title);
+    if (EDITORIAL_BLURB_OVERRIDES[key]) return EDITORIAL_BLURB_OVERRIDES[key];
+    return sanitizeEditorialBlurb(desc);
+  }
+
+  function applyEditorialBlurbToNode(node, eventDate) {
+    if (!node) return;
+    var venueNode = node.querySelector('.venue-tag');
+    var titleNode = node.querySelector('.event-act a') || node.querySelector('.event-act');
+    var blurbNode = node.querySelector('.event-blurb');
+    if (!titleNode || !blurbNode) return;
+    var venue = normalizeVenueName((venueNode ? venueNode.textContent : '') || node.dataset.venue || '');
+    var title = titleNode.textContent || '';
+    var override = getEditorialBlurb(eventDate, venue, title, blurbNode.textContent || '');
+    if (override && override !== blurbNode.textContent.trim()) {
+      blurbNode.textContent = override;
+    }
+  }
+
+  staticEventEntries.forEach(function(entry) {
+    var block = entry.node ? entry.node.closest('.day-block') : null;
+    var eventDate = block ? (block.dataset.date || '') : '';
+    applyEditorialBlurbToNode(entry.node, eventDate);
+  });
 
   function parseGcalTime(str) {
     var match = /(\d{1,2}):(\d{2})\s*(am|pm)/i.exec(String(str || '').trim());
@@ -2846,7 +2967,7 @@
   function buildEventInnerHtml(row) {
     var venue = normalizeVenueName(row.venue_name) || String(row.venue_name || '').trim() || 'Venue TBA';
     var title = String(row.event_title || '').trim();
-    var desc = String(row.description || '').trim();
+    var desc = getEditorialBlurb(row.event_date, venue, title, row.description || '');
     var link = String(row.event_link || row.map_link || '').trim();
     var color = getDynamicVenueColor(venue, row.venue_is_custom);
     var time = formatTime(row, 'start');
