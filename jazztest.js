@@ -86,6 +86,20 @@
     "Jazz at Logan": "#a54b1a",
     "Venue TBA": "#5a4e3a"
   });
+  var GENERATED_VENUE_PALETTE = [
+    "#7a4334",
+    "#355c8a",
+    "#6b4f8d",
+    "#2f6a4f",
+    "#8a3b5d",
+    "#6a5b2d",
+    "#7b3f86",
+    "#2f6b6f",
+    "#8c4f1f",
+    "#50623a",
+    "#7a2644",
+    "#4d5f8f"
+  ];
   var KNOWN_VENUE_SET = new Set(Object.keys(SHARED_VENUE_COLORS));
   var ALWAYS_SHOW_FILTER_VENUES = [
     "Garcia's Chicago",
@@ -94,6 +108,25 @@
     "Gale Street Inn",
     "Dorian's"
   ];
+  function hashVenueName(name) {
+    var value = String(name || '');
+    var hash = 0;
+    for (var i = 0; i < value.length; i += 1) {
+      hash = ((hash * 31) + value.charCodeAt(i)) >>> 0;
+    }
+    return hash;
+  }
+
+  function getOrCreateVenueColor(name, fallbackColor) {
+    var normalized = canonicalizeVenueName(name) || String(name || '').trim();
+    if (!normalized) return fallbackColor || SHARED_VENUE_COLORS["Venue TBA"] || "#5a4e3a";
+    if (!SHARED_VENUE_COLORS[normalized]) {
+      var paletteIndex = hashVenueName(normalized) % GENERATED_VENUE_PALETTE.length;
+      SHARED_VENUE_COLORS[normalized] = GENERATED_VENUE_PALETTE[paletteIndex];
+    }
+    return SHARED_VENUE_COLORS[normalized] || fallbackColor || "#5a4e3a";
+  }
+
   var venueColors = {};
   var venueCounts = {};
   var ALL_VENUES = [];
@@ -107,7 +140,7 @@
     var rawVenue = ev.dataset.venue || (venueTag ? venueTag.textContent : '');
     var canonicalVenue = canonicalizeVenueName(rawVenue);
     if (!canonicalVenue) return;
-    var canonicalColor = SHARED_VENUE_COLORS[canonicalVenue];
+    var canonicalColor = getOrCreateVenueColor(canonicalVenue);
     ev.dataset.venue = canonicalVenue;
     if (venueTag) venueTag.textContent = canonicalVenue;
     if (canonicalColor) {
@@ -138,7 +171,7 @@
       venueCounts[v] = (venueCounts[v] || 0) + 1;
       if (!venueColors[v]) {
         var m = (ev.getAttribute('style') || '').match(/border-left-color:\s*([^;]+)/);
-        venueColors[v] = SHARED_VENUE_COLORS[v] || (m ? m[1].trim() : '#888888');
+        venueColors[v] = getOrCreateVenueColor(v, m ? m[1].trim() : '#5a4e3a');
       }
     });
     ALWAYS_SHOW_FILTER_VENUES.forEach(function(v) {
@@ -152,7 +185,7 @@
     var btn = document.createElement('button');
     btn.className = 'vf-btn' + (activeVenues.has(v) ? ' active' : '');
     btn.dataset.venue = v;
-    btn.setAttribute('style', '--vc:' + (venueColors[v] || '#888888'));
+    btn.setAttribute('style', '--vc:' + getOrCreateVenueColor(v, venueColors[v] || '#5a4e3a'));
     btn.textContent = label;
     btn.addEventListener('click', function() {
       if (activeVenues.has(v)) { activeVenues.delete(v); btn.classList.remove('active'); }
@@ -1221,7 +1254,7 @@
   function getVenueColor(name) {
     if (!name) return DEFAULT_COLOR;
     var normalized = canonicalizeVenueName(name);
-    return VENUE_COLORS[normalized] || DEFAULT_COLOR;
+    return getOrCreateVenueColor(normalized || name, DEFAULT_COLOR);
   }
 
   function buildTimeString() {
@@ -2632,11 +2665,11 @@
     var normalized = normalizeVenueName(name) || String(name || '').trim();
     var sharedColors = window.JAZZ_VENUE_COLORS || {};
     if (sharedColors[normalized]) return sharedColors[normalized];
-    if (isCustom) return '#f5f1e8';
+    if (isCustom) return getOrCreateVenueColor(normalized || name, '#5a4e3a');
     if (typeof getVenueColor === 'function') {
       return getVenueColor(name);
     }
-    return '#c8a200';
+    return getOrCreateVenueColor(normalized || name, '#5a4e3a');
   }
 
   function formatTime(row, prefix) {
@@ -2972,8 +3005,7 @@
     var color = getDynamicVenueColor(venue, row.venue_is_custom);
     var time = formatTime(row, 'start');
     var price = formatPrice(row);
-    var sharedColors = window.JAZZ_VENUE_COLORS || {};
-    var venueTagClass = (row.venue_is_custom && !sharedColors[venue]) ? 'venue-tag misc-preview' : 'venue-tag';
+    var venueTagClass = 'venue-tag';
     var gcalHtml = buildGcalButtonHtml(row, venue, title || '(untitled)', time, desc);
 
     var metaHtml = '<div class="event-meta">' +
