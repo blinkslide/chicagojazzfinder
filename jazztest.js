@@ -101,6 +101,9 @@
     "#4d5f8f"
   ];
   var KNOWN_VENUE_SET = new Set(Object.keys(SHARED_VENUE_COLORS));
+  var OTHER_VENUE_FILTER_KEY = '__other__';
+  var OTHER_VENUE_FILTER_LABEL = 'Other';
+  var OTHER_VENUE_COLOR = '#4f5d75';
   var ALWAYS_SHOW_FILTER_VENUES = [
     "Garcia's Chicago",
     "Fitzgerald's Nightclub",
@@ -126,9 +129,11 @@
     }
     return SHARED_VENUE_COLORS[normalized] || fallbackColor || "#5a4e3a";
   }
+  window.getOrCreateVenueColor = getOrCreateVenueColor;
 
   var venueColors = {};
   var venueCounts = {};
+  var otherVenueNames = [];
   var ALL_VENUES = [];
   var activeVenues = new Set();
   var bank = document.getElementById('venue-word-bank');
@@ -150,6 +155,10 @@
   });
 
   function sortVenueNames(a, b) {
+    if (a === OTHER_VENUE_FILTER_KEY || b === OTHER_VENUE_FILTER_KEY) {
+      if (a === b) return 0;
+      return a === OTHER_VENUE_FILTER_KEY ? 1 : -1;
+    }
     var ai = PREFERRED_VENUE_ORDER.indexOf(a);
     var bi = PREFERRED_VENUE_ORDER.indexOf(b);
     if (ai !== -1 || bi !== -1) {
@@ -162,12 +171,33 @@
     return a.localeCompare(b);
   }
 
+  function isOtherVenueName(name) {
+    var normalized = canonicalizeVenueName(name) || String(name || '').trim();
+    return !!(normalized && !KNOWN_VENUE_SET.has(normalized));
+  }
+
+  function getVenueFilterKey(name) {
+    var normalized = canonicalizeVenueName(name) || String(name || '').trim();
+    if (!normalized) return '';
+    return isOtherVenueName(normalized) ? OTHER_VENUE_FILTER_KEY : normalized;
+  }
+
   function collectVenueMetadata() {
     venueColors = {};
     venueCounts = {};
+    otherVenueNames = [];
+    var seenOtherVenues = {};
     document.querySelectorAll('.event').forEach(function(ev) {
       var v = canonicalizeVenueName(ev.dataset.venue || '');
       if (!v) return;
+      if (isOtherVenueName(v)) {
+        venueCounts[OTHER_VENUE_FILTER_KEY] = (venueCounts[OTHER_VENUE_FILTER_KEY] || 0) + 1;
+        if (!seenOtherVenues[v]) {
+          seenOtherVenues[v] = true;
+          otherVenueNames.push(v);
+        }
+        return;
+      }
       venueCounts[v] = (venueCounts[v] || 0) + 1;
       if (!venueColors[v]) {
         var m = (ev.getAttribute('style') || '').match(/border-left-color:\s*([^;]+)/);
@@ -178,14 +208,23 @@
       if (!venueColors[v] && SHARED_VENUE_COLORS[v]) venueColors[v] = SHARED_VENUE_COLORS[v];
       if (!venueCounts[v]) venueCounts[v] = 0;
     });
+    if (otherVenueNames.length) {
+      otherVenueNames.sort(function(a, b) { return a.localeCompare(b); });
+      venueColors[OTHER_VENUE_FILTER_KEY] = OTHER_VENUE_COLOR;
+    }
   }
 
   function renderVenuePill(v) {
-    var label = VENUE_LABELS[v] || (v.length > 14 ? v.slice(0, 12) + '\u2026' : v);
+    var label = v === OTHER_VENUE_FILTER_KEY
+      ? OTHER_VENUE_FILTER_LABEL
+      : (VENUE_LABELS[v] || (v.length > 14 ? v.slice(0, 12) + '\u2026' : v));
     var btn = document.createElement('button');
     btn.className = 'vf-btn' + (activeVenues.has(v) ? ' active' : '');
     btn.dataset.venue = v;
     btn.setAttribute('style', '--vc:' + getOrCreateVenueColor(v, venueColors[v] || '#5a4e3a'));
+    if (v === OTHER_VENUE_FILTER_KEY && otherVenueNames.length) {
+      btn.title = otherVenueNames.join(', ');
+    }
     btn.textContent = label;
     btn.addEventListener('click', function() {
       if (activeVenues.has(v)) { activeVenues.delete(v); btn.classList.remove('active'); }
@@ -277,7 +316,8 @@
       var anyEventVisible = false;
       block.querySelectorAll('.event').forEach(function(ev) {
         var v = canonicalizeVenueName(ev.dataset.venue);
-        var venueMatch = !v || activeVenues.has(v);
+        var venueFilterKey = getVenueFilterKey(v);
+        var venueMatch = !venueFilterKey || activeVenues.has(venueFilterKey);
         var suppressed = ev.dataset.supabaseSuppressed === 'true';
         var haystack = (ev.dataset.searchText || ev.textContent || '').toLowerCase();
         var searchMatch = !searchQuery || haystack.indexOf(searchQuery) !== -1;
@@ -1254,7 +1294,10 @@
   function getVenueColor(name) {
     if (!name) return DEFAULT_COLOR;
     var normalized = canonicalizeVenueName(name);
-    return getOrCreateVenueColor(normalized || name, DEFAULT_COLOR);
+    var colorResolver = window.getOrCreateVenueColor;
+    return typeof colorResolver === 'function'
+      ? colorResolver(normalized || name, DEFAULT_COLOR)
+      : (VENUE_COLORS[normalized || name] || DEFAULT_COLOR);
   }
 
   function buildTimeString() {
@@ -2664,12 +2707,14 @@
   function getDynamicVenueColor(name, isCustom) {
     var normalized = normalizeVenueName(name) || String(name || '').trim();
     var sharedColors = window.JAZZ_VENUE_COLORS || {};
+    var colorResolver = window.getOrCreateVenueColor;
     if (sharedColors[normalized]) return sharedColors[normalized];
-    if (isCustom) return getOrCreateVenueColor(normalized || name, '#5a4e3a');
+    if (isCustom && typeof colorResolver === 'function') return colorResolver(normalized || name, '#5a4e3a');
     if (typeof getVenueColor === 'function') {
       return getVenueColor(name);
     }
-    return getOrCreateVenueColor(normalized || name, '#5a4e3a');
+    if (typeof colorResolver === 'function') return colorResolver(normalized || name, '#5a4e3a');
+    return '#5a4e3a';
   }
 
   function formatTime(row, prefix) {
