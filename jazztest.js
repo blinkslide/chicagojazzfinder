@@ -148,10 +148,7 @@
     var canonicalColor = getOrCreateVenueColor(canonicalVenue);
     ev.dataset.venue = canonicalVenue;
     if (venueTag) venueTag.textContent = canonicalVenue;
-    if (canonicalColor) {
-      ev.style.borderLeftColor = canonicalColor;
-      if (venueTag) venueTag.style.background = canonicalColor;
-    }
+    if (canonicalColor && venueTag) venueTag.style.background = canonicalColor;
   });
 
   function sortVenueNames(a, b) {
@@ -1139,9 +1136,9 @@
     var dayAbbr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var blocks = Array.from(document.querySelectorAll('.day-block'));
     blocks.sort(function(a, b) { return a.dataset.date < b.dataset.date ? -1 : 1; });
-    blocks.forEach(function(block) {
-      var date = block.dataset.date;
-      if (!date) return;
+    var upcomingDates = [];
+    var pastDates = [];
+    function appendOption(date) {
       var d = new Date(date + 'T12:00:00');
       var label = dayAbbr[d.getDay()] + ' ' + monthNames[d.getMonth()] + ' ' + d.getDate();
       if (date === today) label += ' \u2605';
@@ -1149,11 +1146,31 @@
       opt.value = date;
       opt.textContent = label;
       sel.appendChild(opt);
+    }
+    blocks.forEach(function(block) {
+      var date = block.dataset.date;
+      if (!date) return;
+      if (date < today) pastDates.push(date);
+      else upcomingDates.push(date);
     });
+    upcomingDates.forEach(appendOption);
+    if (pastDates.length) {
+      var divider = document.createElement('option');
+      divider.value = '';
+      divider.textContent = '──────── Past dates';
+      divider.disabled = true;
+      sel.appendChild(divider);
+      pastDates.sort(function(a, b) { return a > b ? -1 : 1; }).forEach(appendOption);
+    }
     if (sel.querySelector('option[value="' + today + '"]')) {
       sel.value = today;
-    } else if (sel.options.length > 1) {
-      sel.selectedIndex = 1;
+    } else {
+      var defaultDate = upcomingDates[0] || pastDates[0];
+      if (defaultDate && sel.querySelector('option[value="' + defaultDate + '"]')) {
+        sel.value = defaultDate;
+      } else if (sel.options.length > 1) {
+        sel.selectedIndex = 1;
+      }
     }
     sel.addEventListener('change', function() {
       var val = this.value;
@@ -2108,9 +2125,9 @@
     blocks.sort(function(a, b) {
       return a.dataset.date < b.dataset.date ? -1 : 1;
     });
-    blocks.forEach(function(block) {
-      var date = block.dataset.date;
-      if (!date) return;
+    var upcomingDates = [];
+    var pastDates = [];
+    function appendJumpOption(date) {
       var d = new Date(date + 'T12:00:00');
       var label = dayAbbr[d.getDay()] + ' ' + monthNames[d.getMonth()] + ' ' + d.getDate();
       if (date === todayStr) label += ' ★';
@@ -2118,11 +2135,31 @@
       opt.value = date;
       opt.textContent = label;
       dateJump.appendChild(opt);
+    }
+    blocks.forEach(function(block) {
+      var date = block.dataset.date;
+      if (!date) return;
+      if (date < todayStr) pastDates.push(date);
+      else upcomingDates.push(date);
     });
+    upcomingDates.forEach(appendJumpOption);
+    if (pastDates.length) {
+      var divider = document.createElement('option');
+      divider.value = '';
+      divider.textContent = '──────── Past dates';
+      divider.disabled = true;
+      dateJump.appendChild(divider);
+      pastDates.sort(function(a, b) { return a > b ? -1 : 1; }).forEach(appendJumpOption);
+    }
     if (dateJump.querySelector('option[value="' + todayStr + '"]')) {
       dateJump.value = todayStr;
-    } else if (dateJump.options.length > 1) {
-      dateJump.selectedIndex = 1;
+    } else {
+      var defaultDate = upcomingDates[0] || pastDates[0];
+      if (defaultDate && dateJump.querySelector('option[value="' + defaultDate + '"]')) {
+        dateJump.value = defaultDate;
+      } else if (dateJump.options.length > 1) {
+        dateJump.selectedIndex = 1;
+      }
     }
     dateJump.onchange = function() {
       var val = this.value;
@@ -3088,7 +3125,6 @@
     entry.node.dataset.submissionId = row.id;
     entry.node.dataset.supabaseManaged = 'true';
     delete entry.node.dataset.supabaseSuppressed;
-    entry.node.style.borderLeftColor = rendered.color;
     entry.node.innerHTML = rendered.innerHtml;
   }
 
@@ -3106,7 +3142,6 @@
     node.dataset.catchall = 'false';
     node.dataset.submissionId = row.id;
     node.dataset.dynamicApproved = 'true';
-    node.style.borderLeftColor = color;
     node.innerHTML = rendered.innerHtml;
     return node;
   }
@@ -3141,21 +3176,46 @@
     var dateJump = document.getElementById('date-jump');
     if (!dateJump) return;
     var currentValue = dateJump.value;
+    var todayStr = getTodayStr();
     dateJump.innerHTML = '<option value="">? Date</option>';
-    Array.from(document.querySelectorAll('.day-block'))
+    var sortedBlocks = Array.from(document.querySelectorAll('.day-block'))
       .sort(function(a, b) {
         return (a.dataset.date || '') < (b.dataset.date || '') ? -1 : 1;
-      })
-      .forEach(function(block) {
-        var date = block.dataset.date;
-        if (!date) return;
+      });
+    var upcomingDates = [];
+    var pastDates = [];
+    sortedBlocks.forEach(function(block) {
+      var date = block.dataset.date;
+      if (!date) return;
+      if (date < todayStr) pastDates.push(date);
+      else upcomingDates.push(date);
+    });
+    upcomingDates.forEach(function(date) {
+      var option = document.createElement('option');
+      option.value = date;
+      option.textContent = formatJumpLabel(date);
+      dateJump.appendChild(option);
+    });
+    if (pastDates.length) {
+      var divider = document.createElement('option');
+      divider.value = '';
+      divider.textContent = '──────── Past dates';
+      divider.disabled = true;
+      dateJump.appendChild(divider);
+      pastDates.sort(function(a, b) { return a > b ? -1 : 1; }).forEach(function(date) {
         var option = document.createElement('option');
         option.value = date;
         option.textContent = formatJumpLabel(date);
         dateJump.appendChild(option);
       });
+    }
     if (currentValue && dateJump.querySelector('option[value="' + currentValue + '"]')) {
       dateJump.value = currentValue;
+    } else {
+      var defaultDate = upcomingDates[0] || pastDates[0];
+      if (defaultDate && dateJump.querySelector('option[value="' + defaultDate + '"]')) {
+        dateJump.value = defaultDate;
+      }
     }
   }
 
