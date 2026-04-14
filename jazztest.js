@@ -1054,19 +1054,22 @@
   refreshSubmissionFocusFlow();
 
   var mapToggleBtn = document.getElementById('map-toggle-btn');
+  var mapPanel = document.getElementById('map-panel');
   var mapEl = document.getElementById('venue-map');
   var mapVisible = false;
   var mapInitialised = false;
   if (mapToggleBtn) {
     mapToggleBtn.addEventListener('click', function() {
       mapVisible = !mapVisible;
-      mapEl.style.display = mapVisible ? 'block' : 'none';
+      if (mapPanel) mapPanel.hidden = !mapVisible;
       mapToggleBtn.classList.toggle('active', mapVisible);
       window.scrollTo({top: 0, behavior: 'smooth'});
       if (mapVisible) {
         if (!mapInitialised) {
           mapInitialised = true;
-          initVenueMap();
+          setTimeout(function() {
+            initVenueMap();
+          }, 80);
         } else {
           setTimeout(function() {
             window._venueMap.invalidateSize();
@@ -1079,6 +1082,175 @@
 
   var pastWrapper = document.getElementById('past-wrapper');
   var pastToggleBtn = document.getElementById('past-toggle');
+
+  function normalizeMapVenueKey(name) {
+    return String(name || '').trim().toLowerCase();
+  }
+  window.normalizeMapVenueKey = normalizeMapVenueKey;
+
+  function escapeMapLabel(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function getMapNameLabelOffset(direction) {
+    switch (String(direction || 'top')) {
+      case 'left': return [-10, 0];
+      case 'right': return [10, 0];
+      case 'bottom': return [0, 10];
+      default: return [0, -10];
+    }
+  }
+
+  window._activeMapLabels = window._activeMapLabels || {};
+  window._venueMapMarkers = window._venueMapMarkers || {};
+  window._selectedMapVenueKey = window._selectedMapVenueKey || '';
+  var MAP_SELECT_DEFAULT_LABEL = 'Select a venue';
+  var MAP_SELECT_ALL_VALUE = '__all__';
+  var MAP_SELECT_ALL_LABEL = 'Select all venues';
+
+  function updateMapKeyState() {
+    var select = document.getElementById('map-venue-select');
+    var zoomBtn = document.getElementById('map-zoom-btn');
+    var selectedKey = window._selectedMapVenueKey || '';
+    var selectedEntry = selectedKey && selectedKey !== MAP_SELECT_ALL_VALUE ? (window._venueMapMarkers || {})[selectedKey] : null;
+    if (select) {
+      select.value = selectedKey || '';
+      select.classList.toggle('is-active', !!selectedKey);
+    }
+    if (zoomBtn) {
+      zoomBtn.disabled = !selectedEntry;
+      zoomBtn.textContent = selectedEntry ? ('Zoom to ' + selectedEntry.name) : 'Zoom to venue';
+    }
+  }
+
+  function syncVenueMapLabels() {
+    var markerMap = window._venueMapMarkers || {};
+    Object.keys(markerMap).forEach(function(venueKey) {
+      var entry = markerMap[venueKey];
+      if (!entry || !entry.marker) return;
+      var isActive = !!window._activeMapLabels[venueKey];
+      if (typeof entry.marker.setRadius === 'function') {
+        entry.marker.setRadius(isActive ? 10 : 8);
+      }
+      if (typeof entry.marker.setStyle === 'function') {
+        entry.marker.setStyle({
+          color: isActive ? '#f8efdf' : '#fff',
+          weight: isActive ? 3 : 2,
+          fillOpacity: isActive ? 1 : 0.9
+        });
+      }
+      if (isActive) {
+        entry.marker.bindTooltip('<span class="map-pin-label">' + escapeMapLabel(entry.name) + '</span>', {
+          permanent: true,
+          direction: entry.labelDir || 'top',
+          offset: getMapNameLabelOffset(entry.labelDir),
+          className: 'venue-map-label map-name-label'
+        });
+        entry.marker.openTooltip();
+        setTimeout(function() {
+          var tooltip = entry.marker.getTooltip && entry.marker.getTooltip();
+          var tooltipEl = tooltip && tooltip.getElement ? tooltip.getElement() : null;
+          if (tooltipEl) {
+            tooltipEl.style.setProperty('--map-label-color', entry.color || '#b98a49');
+          }
+        }, 0);
+      } else if (entry.marker.getTooltip()) {
+        entry.marker.unbindTooltip();
+      }
+    });
+    updateMapKeyState();
+  }
+  window.syncVenueMapLabels = syncVenueMapLabels;
+
+  function toggleVenueMapLabel(name) {
+    var venueKey = normalizeMapVenueKey(name);
+    if (!venueKey) return;
+    if (window._activeMapLabels[venueKey]) delete window._activeMapLabels[venueKey];
+    else window._activeMapLabels[venueKey] = true;
+    syncVenueMapLabels();
+  }
+
+  function selectAllVenueMapLabels() {
+    window._selectedMapVenueKey = MAP_SELECT_ALL_VALUE;
+    window._activeMapLabels = {};
+    Object.keys(window._venueMapMarkers || {}).forEach(function(venueKey) {
+      window._activeMapLabels[venueKey] = true;
+    });
+    syncVenueMapLabels();
+    if (window._venueMap && window._venueBounds) {
+      window._venueMap.fitBounds(window._venueBounds);
+    }
+  }
+  window.clearVenueMapLabels = selectAllVenueMapLabels;
+
+  function buildVenueMapKey() {
+    var select = document.getElementById('map-venue-select');
+    if (!select) return;
+    var venues = Array.isArray(window.VENUE_MAP_DATA) ? window.VENUE_MAP_DATA.slice() : [];
+    venues.sort(function(a, b) { return String(a.name || '').localeCompare(String(b.name || '')); });
+    select.innerHTML = '<option value="">' + MAP_SELECT_DEFAULT_LABEL + '</option>';
+    var allOption = document.createElement('option');
+    allOption.value = MAP_SELECT_ALL_VALUE;
+    allOption.textContent = MAP_SELECT_ALL_LABEL;
+    select.appendChild(allOption);
+    venues.forEach(function(v) {
+      var option = document.createElement('option');
+      option.value = normalizeMapVenueKey(v.name);
+      option.textContent = v.name;
+      select.appendChild(option);
+    });
+    if (window._selectedMapVenueKey && window._selectedMapVenueKey !== MAP_SELECT_ALL_VALUE && !window._venueMapMarkers[window._selectedMapVenueKey]) {
+      window._selectedMapVenueKey = '';
+    }
+    updateMapKeyState();
+  }
+  window.buildVenueMapKey = buildVenueMapKey;
+
+  function focusVenueOnMap(venueKey) {
+    var entry = (window._venueMapMarkers || {})[venueKey];
+    if (!entry || !entry.marker) return;
+    window._selectedMapVenueKey = venueKey;
+    window._activeMapLabels = {};
+    window._activeMapLabels[venueKey] = true;
+    syncVenueMapLabels();
+  }
+
+  function zoomVenueOnMap(venueKey) {
+    var entry = (window._venueMapMarkers || {})[venueKey];
+    if (!entry || !entry.marker) return;
+    focusVenueOnMap(venueKey);
+    if (window._venueMap && typeof entry.marker.getLatLng === 'function') {
+      window._venueMap.flyTo(entry.marker.getLatLng(), 14, {
+        animate: true,
+        duration: 1
+      });
+    }
+  }
+
+  var mapVenueSelect = document.getElementById('map-venue-select');
+  if (mapVenueSelect) {
+    mapVenueSelect.addEventListener('change', function() {
+      var venueKey = this.value || '';
+      if (!venueKey) return;
+      if (venueKey === MAP_SELECT_ALL_VALUE) {
+        selectAllVenueMapLabels();
+        return;
+      }
+      focusVenueOnMap(venueKey);
+    });
+  }
+
+  var mapZoomBtn = document.getElementById('map-zoom-btn');
+  if (mapZoomBtn) {
+    mapZoomBtn.addEventListener('click', function() {
+      if (!window._selectedMapVenueKey) return;
+      zoomVenueOnMap(window._selectedMapVenueKey);
+    });
+  }
   var pastToggleTop = document.getElementById('past-toggle-top');
   var pastVisible = false;
 
@@ -1213,28 +1385,31 @@
   ];
   window.initVenueMap = function() {
   var venues = window.VENUE_MAP_DATA || [];
-  var map = L.map('venue-map', {scrollWheelZoom: false});
+  var map = L.map('venue-map', {scrollWheelZoom: false, zoomControl: false});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors — <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
 
   var venueMarkers = [];
+  window._venueMapMarkers = {};
   venues.forEach(function(v) {
     var m = L.circleMarker([v.lat, v.lng], {
       radius: 8, fillColor: v.color, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.9
     }).addTo(map);
-    m.bindTooltip('<span class="map-pin-label">' + v.initials + '</span>', {
-      permanent: true,
-      direction: v.label_dir || 'top',
-      offset: v.label_offset || [0, -10],
-      className: 'venue-map-label'
-    });
     m.on('click', function() {
       var a = document.createElement('a');
       a.href = v.maps_url; a.target = '_blank'; a.rel = 'noopener';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     });
+        window._venueMapMarkers[normalizeMapVenueKey(v.name)] = {
+          marker: m,
+          name: v.name,
+          color: v.color,
+          labelDir: v.label_dir,
+          labelOffset: v.label_offset
+        };
     venueMarkers.push({ marker: m });
   });
 
@@ -1249,6 +1424,8 @@
   setTimeout(function() {
     window._venueMap.invalidateSize();
     window._venueMap.fitBounds(window._venueBounds);
+    buildVenueMapKey();
+    syncVenueMapLabels();
   }, 150);
   }; // end initVenueMap
 })();
@@ -2045,6 +2222,7 @@
 (function() {
   var dateJump = document.getElementById('date-jump');
   var mapBtn = document.getElementById('map-toggle-btn');
+  var mapPanel = document.getElementById('map-panel');
   var mapEl = document.getElementById('venue-map');
   var DEFAULT_VENUE_MAP_DATA = [
     {"name": "Andy's Jazz Club", "initials": "A", "addr": "11 E. Hubbard St, River North", "lat": 41.8916, "lng": -87.628, "color": "#b45309", "maps_url": "https://maps.google.com/?q=11+E+Hubbard+St+Chicago+IL", "label_dir": "left", "label_offset": [-12, 0]},
@@ -2075,12 +2253,14 @@
     window.initVenueMap = function() {
       if (typeof window.L === 'undefined') return;
       var venues = Array.isArray(window.VENUE_MAP_DATA) && window.VENUE_MAP_DATA.length ? window.VENUE_MAP_DATA : DEFAULT_VENUE_MAP_DATA;
-      var map = L.map('venue-map', { scrollWheelZoom: false });
+      var map = L.map('venue-map', { scrollWheelZoom: false, zoomControl: false });
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19
       }).addTo(map);
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      window._venueMapMarkers = {};
       venues.forEach(function(v) {
         var marker = L.circleMarker([v.lat, v.lng], {
           radius: 8,
@@ -2090,15 +2270,16 @@
           opacity: 1,
           fillOpacity: 0.9
         }).addTo(map);
-        marker.bindTooltip('<span class="map-pin-label">' + v.initials + '</span>', {
-          permanent: true,
-          direction: v.label_dir || 'top',
-          offset: v.label_offset || [0, -10],
-          className: 'venue-map-label'
-        });
         marker.on('click', function() {
           if (v.maps_url) window.open(v.maps_url, '_blank', 'noopener');
         });
+        window._venueMapMarkers[window.normalizeMapVenueKey(v.name)] = {
+          marker: marker,
+          name: v.name,
+          color: v.color,
+          labelDir: v.label_dir,
+          labelOffset: v.label_offset
+        };
       });
       var lats = venues.map(function(v) { return v.lat; });
       var lngs = venues.map(function(v) { return v.lng; });
@@ -2111,6 +2292,8 @@
       setTimeout(function() {
         window._venueMap.invalidateSize();
         window._venueMap.fitBounds(window._venueBounds);
+        window.buildVenueMapKey();
+        window.syncVenueMapLabels();
       }, 150);
     };
   }
@@ -2177,9 +2360,16 @@
     mapBtn.addEventListener('click', function(event) {
       event.preventDefault();
       ensureVenueMapBootstrap();
-      var isOpening = mapEl.style.display !== 'block';
-      mapEl.style.display = isOpening ? 'block' : 'none';
+      var isOpening = !mapPanel || mapPanel.hidden;
+      if (mapPanel) mapPanel.hidden = !isOpening;
       mapBtn.classList.toggle('active', isOpening);
+      if (isOpening) {
+        var venueToggle = document.getElementById('venue-filter-toggle');
+        if (venueToggle && venueToggle.checked) {
+          venueToggle.checked = false;
+          venueToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       if (!isOpening) return;
@@ -2196,13 +2386,17 @@
           if (mapEl._leaflet_id) {
             delete mapEl._leaflet_id;
           }
-          window.initVenueMap();
+          setTimeout(function() {
+            window.initVenueMap();
+          }, 80);
         } catch (error) {
           console.warn('Map initialisation failed', error);
         }
         return;
       }
 
+      window.buildVenueMapKey();
+      window.syncVenueMapLabels();
       if (window._venueMap && typeof window._venueMap.invalidateSize === 'function') {
         setTimeout(function() {
           window._venueMap.invalidateSize();
