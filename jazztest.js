@@ -105,6 +105,7 @@
   var OTHER_VENUE_FILTER_LABEL = 'Other';
   var OTHER_VENUE_COLOR = '#4f5d75';
   var ALWAYS_SHOW_FILTER_VENUES = [
+    "The Whistler",
     "Garcia's Chicago",
     "Fitzgerald's Nightclub",
     "SPACE Evanston",
