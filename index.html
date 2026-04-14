@@ -13,7 +13,7 @@
 <script src="supabase/supabase-config.js"></script>
 <script src="supabase/supabase-client.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link rel="stylesheet" href="jazztest.css?v=20260413e">
+<link rel="stylesheet" href="jazztest.css?v=20260414b">
 </head>
 <body>
 <div class="masthead">
@@ -40,7 +40,20 @@
       <div class="venue-word-bank" id="venue-word-bank"></div>
     </div>
   </div><div class="wrapper">
-  <div id="venue-map"></div>
+  <div id="map-panel" hidden>
+    <div class="map-panel-head">
+      <div class="map-guide">Click a pin to open Google Maps.</div>
+    </div>
+    <div class="map-frame">
+      <div class="map-controls">
+        <select id="map-venue-select" class="map-select">
+          <option value="">Select a venue</option>
+        </select>
+        <button type="button" class="util-btn" id="map-zoom-btn" disabled>Zoom to venue</button>
+      </div>
+      <div id="venue-map"></div>
+    </div>
+  </div>
   <div id="no-results">No events match the current filters.</div>
   <div class="calendar-search-shell">
     <div class="calendar-search-prompt" aria-hidden="true">
@@ -6646,7 +6659,7 @@
     </div>
   </div>
 </div>
-<script src="jazztest.js?v=20260413j"></script>
+<script src="jazztest.js?v=20260414b"></script>
 </body>
 </html>
 
