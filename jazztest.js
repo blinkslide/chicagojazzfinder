@@ -2112,13 +2112,7 @@
         '<div class="past-toggle-actions right">' +
           '<div class="action-stack">' +
             '<div class="action-note">Keep this calendar fresh</div>' +
-            '<button type="button" id="donate-toggle-btn" class="action-btn support" onclick="var p=this.parentNode;var btn=this;btn.style.display=\'none\';p.querySelector(\'.donate-btns\').style.display=\'flex\';setTimeout(function(){p.querySelector(\'.donate-btns\').style.display=\'none\';btn.style.display=\'\';},8000);">Donate</button>' +
-            '<div class="donate-btns" style="display:none">' +
-              '<div class="donate-opt">' +
-                '<a href="https://ko-fi.com/chicagojazzfinder" target="_blank" rel="noopener" class="action-btn support">Ko-Fi</a>' +
-                '<div class="action-note donate-sub">Accepts Apple Pay, Google Pay, Cashapp, Venmo, Paypal, and Cards</div>' +
-              '</div>' +
-            '</div>' +
+            '<a href="https://ko-fi.com/chicagojazzfinder" target="_blank" rel="noopener" class="action-btn support">Donate</a>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -2956,7 +2950,35 @@
     return hour + ':' + minute + ampm;
   }
 
+  function isRelaxAttackStaticRow(row) {
+    return !!row &&
+      row.source === 'jazztest_static' &&
+      /^Relax Attack Jazz Series:/i.test(String(row.event_title || '').trim());
+  }
+
+  function isWhistlerStaticRow(row) {
+    return !!row &&
+      row.source === 'jazztest_static' &&
+      normalizeVenueName(row.venue_name) === 'The Whistler';
+  }
+
+  function normalizeDisplayRow(row) {
+    if (!isRelaxAttackStaticRow(row) && !isWhistlerStaticRow(row)) return row;
+    var next = Object.assign({}, row);
+    next.start_hour = '9';
+    next.start_minute = '00';
+    next.start_ampm = 'PM';
+    next.price_amount = 0;
+    next.price_display = 'Free';
+    next.doors_enabled = false;
+    next.doors_hour = null;
+    next.doors_minute = null;
+    next.doors_ampm = null;
+    return next;
+  }
+
   function formatPrice(row) {
+    row = normalizeDisplayRow(row);
     var amount = row.price_amount;
     var display = String(row.price_display || '').trim();
     var base = display || (amount === 0 ? '$0' : (amount ? ('$' + amount) : ''));
@@ -2968,6 +2990,7 @@
   }
 
   function eventSortValue(row) {
+    row = normalizeDisplayRow(row);
     var hour = parseInt(row.start_hour || '0', 10);
     var minute = parseInt(row.start_minute || '0', 10);
     var ampm = String(row.start_ampm || 'PM').toUpperCase();
@@ -3042,6 +3065,14 @@
     ].join('||');
   }
 
+  function buildEventTitleKey(eventDate, venue, title) {
+    return [
+      normalizeEventKeyText(eventDate),
+      normalizeEventKeyText(venue),
+      normalizeEventKeyText(title)
+    ].join('||');
+  }
+
   function extractStaticSlotKey(row) {
     var notes = String(row.notes || '');
     var match = notes.match(/\[slot-key:([^\]]+)\]/i);
@@ -3049,6 +3080,7 @@
   }
 
   function buildRowEventKey(row) {
+    row = normalizeDisplayRow(row);
     return buildEventKey(
       row.event_date,
       normalizeVenueName(row.venue_name) || String(row.venue_name || '').trim(),
@@ -3058,11 +3090,25 @@
   }
 
   function buildRowSlotKey(row) {
+    row = normalizeDisplayRow(row);
     return buildEventSlotKey(
       row.event_date,
       normalizeVenueName(row.venue_name) || String(row.venue_name || '').trim(),
       formatTime(row, 'start')
     );
+  }
+
+  function buildRowTitleKey(row) {
+    row = normalizeDisplayRow(row);
+    return buildEventTitleKey(
+      row.event_date,
+      normalizeVenueName(row.venue_name) || String(row.venue_name || '').trim(),
+      String(row.event_title || '').trim()
+    );
+  }
+
+  function getManagedRowStamp(row) {
+    return String(row.reviewed_at || row.updated_at || row.created_at || row.id || '');
   }
 
   function captureStaticEventEntries() {
@@ -3075,6 +3121,7 @@
       var time = (node.querySelector('.event-time') || {}).textContent || '';
       return {
         key: buildEventKey(eventDate, venue, title, time),
+        titleKey: buildEventTitleKey(eventDate, venue, title),
         slotKey: buildEventSlotKey(eventDate, venue, time),
         node: node,
         originalHtml: node.innerHTML,
@@ -3092,9 +3139,12 @@
 
   var staticEventEntries = captureStaticEventEntries();
   var staticEntryByKey = {};
+  var staticEntriesByTitleKey = {};
   var staticEntriesBySlotKey = {};
   staticEventEntries.forEach(function(entry) {
     staticEntryByKey[entry.key] = entry;
+    if (!staticEntriesByTitleKey[entry.titleKey]) staticEntriesByTitleKey[entry.titleKey] = [];
+    staticEntriesByTitleKey[entry.titleKey].push(entry);
     if (!staticEntriesBySlotKey[entry.slotKey]) staticEntriesBySlotKey[entry.slotKey] = [];
     staticEntriesBySlotKey[entry.slotKey].push(entry);
   });
@@ -3274,6 +3324,7 @@
   }
 
   function buildEventInnerHtml(row) {
+    row = normalizeDisplayRow(row);
     var venue = normalizeVenueName(row.venue_name) || String(row.venue_name || '').trim() || 'Venue TBA';
     var title = String(row.event_title || '').trim();
     var desc = getEditorialBlurb(row.event_date, venue, title, row.description || '');
@@ -3320,6 +3371,29 @@
     entry.node.dataset.supabaseManaged = 'true';
     delete entry.node.dataset.supabaseSuppressed;
     entry.node.innerHTML = rendered.innerHtml;
+  }
+
+  function findAvailableStaticEntryForRow(row) {
+    var directEntry = staticEntryByKey[buildRowEventKey(row)];
+    if (directEntry && directEntry.node.dataset.supabaseManaged !== 'true' && directEntry.node.dataset.supabaseSuppressed !== 'true') {
+      return directEntry;
+    }
+
+    var slotKey = extractStaticSlotKey(row) || buildRowSlotKey(row);
+    var slotEntries = staticEntriesBySlotKey[slotKey] || [];
+    for (var i = 0; i < slotEntries.length; i += 1) {
+      if (slotEntries[i].node.dataset.supabaseManaged === 'true' || slotEntries[i].node.dataset.supabaseSuppressed === 'true') continue;
+      return slotEntries[i];
+    }
+
+    var titleKey = buildRowTitleKey(row);
+    var titleEntries = staticEntriesByTitleKey[titleKey] || [];
+    for (var j = 0; j < titleEntries.length; j += 1) {
+      if (titleEntries[j].node.dataset.supabaseManaged === 'true' || titleEntries[j].node.dataset.supabaseSuppressed === 'true') continue;
+      return titleEntries[j];
+    }
+
+    return null;
   }
 
   function buildApprovedEventNode(row) {
@@ -3431,23 +3505,38 @@
 
     var intakeSources = { mixed_intake_test: true, mixed_intake_test_mock: true };
     var latestIntakeByKey = {};
-    var latestStaticManagedBySlotKey = {};
+    var latestStaticManagedByTitleKey = {};
+    var latestManagedOverrideByTitleKey = {};
     var rowsToRender = [];
     var fallbackStaticRows = [];
+    var rowsToSuppress = [];
 
     result.data.forEach(function(row) {
       if (row.source === 'jazztest_static') {
-        var staticSlotKey = extractStaticSlotKey(row) || buildRowSlotKey(row);
-        var currentStatic = latestStaticManagedBySlotKey[staticSlotKey];
-        var rowStaticStamp = row.reviewed_at || row.updated_at || '';
-        var currentStaticStamp = currentStatic ? (currentStatic.reviewed_at || currentStatic.updated_at || '') : '';
+        var staticRow = normalizeDisplayRow(row);
+        var staticTitleKey = buildRowTitleKey(staticRow);
+        var currentStatic = latestStaticManagedByTitleKey[staticTitleKey];
+        var rowStaticStamp = getManagedRowStamp(staticRow);
+        var currentStaticStamp = currentStatic ? getManagedRowStamp(currentStatic) : '';
         if (!currentStatic || rowStaticStamp > currentStaticStamp) {
-          latestStaticManagedBySlotKey[staticSlotKey] = row;
+          latestStaticManagedByTitleKey[staticTitleKey] = staticRow;
         }
         return;
       }
 
-      var isIntake = intakeSources[row.source || ''];
+      var source = String(row.source || '').trim();
+      var isIntake = intakeSources[source];
+      if (!isIntake && source && source !== 'public_form') {
+        var overrideTitleKey = buildRowTitleKey(row);
+        var currentOverride = latestManagedOverrideByTitleKey[overrideTitleKey];
+        var rowOverrideStamp = getManagedRowStamp(row);
+        var currentOverrideStamp = currentOverride ? getManagedRowStamp(currentOverride) : '';
+        if (!currentOverride || rowOverrideStamp > currentOverrideStamp) {
+          latestManagedOverrideByTitleKey[overrideTitleKey] = row;
+        }
+        return;
+      }
+
       if (!isIntake) {
         if (row.status === 'approved' || row.status === 'published') {
           rowsToRender.push(row);
@@ -3456,8 +3545,8 @@
       }
       var key = [row.event_title || '', row.venue_name || '', row.event_date || ''].join('||');
       var current = latestIntakeByKey[key];
-      var rowStamp = row.reviewed_at || row.updated_at || '';
-      var currentStamp = current ? (current.reviewed_at || current.updated_at || '') : '';
+      var rowStamp = getManagedRowStamp(row);
+      var currentStamp = current ? getManagedRowStamp(current) : '';
       var preferRow = !current ||
         rowStamp > currentStamp ||
         (rowStamp === currentStamp && row.source === 'mixed_intake_test_mock' && current.source !== 'mixed_intake_test_mock');
@@ -3473,23 +3562,23 @@
       }
     });
 
+    Object.keys(latestManagedOverrideByTitleKey).forEach(function(key) {
+      var row = latestManagedOverrideByTitleKey[key];
+      if (row.status === 'approved' || row.status === 'published') {
+        rowsToRender.push(row);
+      } else {
+        rowsToSuppress.push(row);
+      }
+    });
+
     document.querySelectorAll('.event[data-dynamic-approved="true"]').forEach(function(node) {
       node.remove();
     });
     restoreStaticEventEntries();
 
-    Object.keys(latestStaticManagedBySlotKey).forEach(function(key) {
-      var row = latestStaticManagedBySlotKey[key];
-      var entry = staticEntryByKey[buildRowEventKey(row)];
-      if (!entry) {
-        var slotKey = extractStaticSlotKey(row) || buildRowSlotKey(row);
-        var slotEntries = staticEntriesBySlotKey[slotKey] || [];
-        for (var i = 0; i < slotEntries.length; i += 1) {
-          if (slotEntries[i].node.dataset.supabaseManaged === 'true' || slotEntries[i].node.dataset.supabaseSuppressed === 'true') continue;
-          entry = slotEntries[i];
-          break;
-        }
-      }
+    Object.keys(latestStaticManagedByTitleKey).forEach(function(key) {
+      var row = latestStaticManagedByTitleKey[key];
+      var entry = findAvailableStaticEntryForRow(row);
       if (!entry) {
         if (row.status === 'approved' || row.status === 'published') {
           fallbackStaticRows.push(row);
@@ -3505,6 +3594,12 @@
       }
     });
 
+    rowsToSuppress.forEach(function(row) {
+      var entry = findAvailableStaticEntryForRow(row);
+      if (!entry) return;
+      entry.node.dataset.supabaseSuppressed = 'true';
+    });
+
     fallbackStaticRows.forEach(function(row) {
       rowsToRender.push(row);
     });
@@ -3512,6 +3607,11 @@
     rowsToRender.forEach(function(row) {
       if (!row || !row.event_date) return;
       if (document.querySelector('.event[data-submission-id="' + row.id + '"]')) return;
+      var matchedEntry = findAvailableStaticEntryForRow(row);
+      if (matchedEntry) {
+        applyRowToStaticEvent(matchedEntry, row);
+        return;
+      }
       var block = ensureDayBlock(row.event_date);
       var eventNode = buildApprovedEventNode(row);
       insertEventSorted(block, eventNode, row);
