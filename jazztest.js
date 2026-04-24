@@ -180,15 +180,33 @@
     return isOtherVenueName(normalized) ? OTHER_VENUE_FILTER_KEY : normalized;
   }
 
+  function getEventVenueName(ev) {
+    if (!ev) return '';
+    var venueTag = ev.querySelector('.venue-tag');
+    return canonicalizeVenueName(ev.dataset.venue || (venueTag ? venueTag.textContent : '')) || '';
+  }
+
+  function isCatchallEvent(ev) {
+    return !!(ev && ev.dataset && ev.dataset.catchall === 'true');
+  }
+
+  function getEventFilterKey(ev) {
+    var venueName = getEventVenueName(ev);
+    if (!venueName) return '';
+    if (isCatchallEvent(ev)) return OTHER_VENUE_FILTER_KEY;
+    return getVenueFilterKey(venueName);
+  }
+
   function collectVenueMetadata() {
     venueColors = {};
     venueCounts = {};
     otherVenueNames = [];
     var seenOtherVenues = {};
     document.querySelectorAll('.event').forEach(function(ev) {
-      var v = canonicalizeVenueName(ev.dataset.venue || '');
+      var v = getEventVenueName(ev);
       if (!v) return;
-      if (isOtherVenueName(v)) {
+      var filterKey = getEventFilterKey(ev);
+      if (filterKey === OTHER_VENUE_FILTER_KEY) {
         venueCounts[OTHER_VENUE_FILTER_KEY] = (venueCounts[OTHER_VENUE_FILTER_KEY] || 0) + 1;
         if (!seenOtherVenues[v]) {
           seenOtherVenues[v] = true;
@@ -313,8 +331,7 @@
       if (isPast && !pastVisible) { block.style.display = 'none'; return; }
       var anyEventVisible = false;
       block.querySelectorAll('.event').forEach(function(ev) {
-        var v = canonicalizeVenueName(ev.dataset.venue);
-        var venueFilterKey = getVenueFilterKey(v);
+        var venueFilterKey = getEventFilterKey(ev);
         var venueMatch = !venueFilterKey || activeVenues.has(venueFilterKey);
         var suppressed = ev.dataset.supabaseSuppressed === 'true';
         var haystack = (ev.dataset.searchText || ev.textContent || '').toLowerCase();
@@ -3415,6 +3432,18 @@
     return node;
   }
 
+  function getNormalizedPublicStatus(rowOrStatus) {
+    var value = rowOrStatus && typeof rowOrStatus === 'object'
+      ? rowOrStatus.status
+      : rowOrStatus;
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function isPublicCalendarStatus(rowOrStatus) {
+    var normalized = getNormalizedPublicStatus(rowOrStatus);
+    return normalized === 'approved' || normalized === 'published';
+  }
+
   function insertEventSorted(block, eventNode, row) {
     var events = Array.from(block.querySelectorAll('.event'));
     var rowSort = eventSortValue(row);
@@ -3539,7 +3568,7 @@
       }
 
       if (!isIntake) {
-        if (row.status === 'approved' || row.status === 'published') {
+        if (isPublicCalendarStatus(row)) {
           rowsToRender.push(row);
         }
         return;
@@ -3558,14 +3587,14 @@
 
     Object.keys(latestIntakeByKey).forEach(function(key) {
       var row = latestIntakeByKey[key];
-      if (row.status === 'approved' || row.status === 'published') {
+      if (isPublicCalendarStatus(row)) {
         rowsToRender.push(row);
       }
     });
 
     Object.keys(latestManagedOverrideByTitleKey).forEach(function(key) {
       var row = latestManagedOverrideByTitleKey[key];
-      if (row.status === 'approved' || row.status === 'published') {
+      if (isPublicCalendarStatus(row)) {
         rowsToRender.push(row);
       } else {
         rowsToSuppress.push(row);
@@ -3581,14 +3610,14 @@
       var row = latestStaticManagedByTitleKey[key];
       var entry = findAvailableStaticEntryForRow(row);
       if (!entry) {
-        if (row.status === 'approved' || row.status === 'published') {
+        if (isPublicCalendarStatus(row)) {
           fallbackStaticRows.push(row);
         } else {
           console.warn('Could not match jazztest_static row to a hardcoded slot', row);
         }
         return;
       }
-      if (row.status === 'approved' || row.status === 'published') {
+      if (isPublicCalendarStatus(row)) {
         applyRowToStaticEvent(entry, row);
       } else {
         entry.node.dataset.supabaseSuppressed = 'true';
