@@ -3285,6 +3285,8 @@
     return sanitizeEditorialBlurb(desc);
   }
 
+  var PUBLIC_EVENT_DESCRIPTIONS_ENABLED = false;
+
   function applyEditorialBlurbToNode(node, eventDate) {
     if (!node) return;
     var venueNode = node.querySelector('.venue-tag');
@@ -3345,7 +3347,7 @@
     row = normalizeDisplayRow(row);
     var venue = normalizeVenueName(row.venue_name) || String(row.venue_name || '').trim() || 'Venue TBA';
     var title = String(row.event_title || '').trim();
-    var desc = getEditorialBlurb(row.event_date, venue, title, row.description || '');
+    var desc = PUBLIC_EVENT_DESCRIPTIONS_ENABLED ? getEditorialBlurb(row.event_date, venue, title, row.description || '') : '';
     var link = String(row.event_link || row.map_link || '').trim();
     var color = getDynamicVenueColor(venue, row.venue_is_custom);
     var time = formatTime(row, 'start');
@@ -3369,7 +3371,7 @@
     actHtml += '</div>';
 
     return {
-      innerHtml: metaHtml + actHtml + (desc ? '<div class="event-blurb">' + escapeHtml(desc) + '</div>' : ''),
+      innerHtml: metaHtml + actHtml + (PUBLIC_EVENT_DESCRIPTIONS_ENABLED && desc ? '<div class="event-blurb">' + escapeHtml(desc) + '</div>' : ''),
       venue: venue,
       color: color,
       time: time
