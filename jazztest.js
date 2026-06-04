@@ -3478,11 +3478,16 @@
     }
   }
 
+  function getDynamicTodayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
   function refreshDateJump() {
     var dateJump = document.getElementById('date-jump');
     if (!dateJump) return;
     var currentValue = dateJump.value;
-    var todayStr = getTodayStr();
+    var todayStr = getDynamicTodayStr();
     dateJump.innerHTML = '<option value="">? Date</option>';
     var sortedBlocks = Array.from(document.querySelectorAll('.day-block'))
       .sort(function(a, b) {
@@ -3688,5 +3693,6 @@
 
   renderApprovedSubmissions();
 })();
+
 
 
