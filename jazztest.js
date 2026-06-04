@@ -3525,10 +3525,26 @@
     var client = supabaseTools.getClient();
     if (!client) return;
 
-    var result = await client
-      .from(supabaseTools.getSubmissionsTable())
-      .select('id,event_title,venue_name,venue_address,map_link,venue_is_custom,event_date,start_hour,start_minute,start_ampm,doors_enabled,doors_hour,doors_minute,doors_ampm,price_amount,price_display,event_link,description,notes,status,source,updated_at,reviewed_at')
-      .order('event_date', { ascending: true });
+    async function fetchSubmissionRows() {
+      var pageSize = 1000;
+      var allRows = [];
+      for (var from = 0; ; from += pageSize) {
+        var to = from + pageSize - 1;
+        var page = await client
+          .from(supabaseTools.getSubmissionsTable())
+          .select('id,event_title,venue_name,venue_address,map_link,venue_is_custom,event_date,start_hour,start_minute,start_ampm,doors_enabled,doors_hour,doors_minute,doors_ampm,price_amount,price_display,event_link,description,notes,status,source,updated_at,reviewed_at')
+          .order('event_date', { ascending: true })
+          .range(from, to);
+
+        if (page.error) return page;
+        var pageRows = Array.isArray(page.data) ? page.data : [];
+        allRows = allRows.concat(pageRows);
+        if (pageRows.length < pageSize) break;
+      }
+      return { data: allRows, error: null };
+    }
+
+    var result = await fetchSubmissionRows();
 
     if (result.error || !Array.isArray(result.data)) {
       console.warn('Could not load approved submissions for jazztest', result.error || result);
@@ -3660,3 +3676,4 @@
 
   renderApprovedSubmissions();
 })();
+
