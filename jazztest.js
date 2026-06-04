@@ -1314,6 +1314,12 @@
   if (pastToggleBtn) pastToggleBtn.addEventListener('click', togglePast);
   if (pastToggleTop) pastToggleTop.addEventListener('click', togglePast);
 
+  window.refreshJazzPastDays = function() {
+    classifyDays();
+    if (pastWrapper) pastWrapper.style.display = pastVisible ? '' : 'none';
+    applyFilters();
+  };
+
   classifyDays();
   pastWrapper.style.display = 'none';
   applyFilters();
@@ -3509,13 +3515,16 @@
         dateJump.appendChild(option);
       });
     }
-    if (currentValue && dateJump.querySelector('option[value="' + currentValue + '"]')) {
-      dateJump.value = currentValue;
+    var preferredDate = '';
+    if (dateJump.querySelector('option[value="' + todayStr + '"]')) {
+      preferredDate = todayStr;
+    } else if (currentValue && currentValue >= todayStr && dateJump.querySelector('option[value="' + currentValue + '"]')) {
+      preferredDate = currentValue;
     } else {
-      var defaultDate = upcomingDates[0] || pastDates[0];
-      if (defaultDate && dateJump.querySelector('option[value="' + defaultDate + '"]')) {
-        dateJump.value = defaultDate;
-      }
+      preferredDate = upcomingDates[0] || pastDates[0] || '';
+    }
+    if (preferredDate && dateJump.querySelector('option[value="' + preferredDate + '"]')) {
+      dateJump.value = preferredDate;
     }
   }
 
@@ -3665,6 +3674,9 @@
       insertEventSorted(block, eventNode, row);
     });
 
+    if (typeof window.refreshJazzPastDays === 'function') {
+      window.refreshJazzPastDays();
+    }
     refreshDateJump();
     if (typeof window.refreshVenueFilters === 'function') {
       window.refreshVenueFilters(true);
@@ -3676,4 +3688,5 @@
 
   renderApprovedSubmissions();
 })();
+
 
