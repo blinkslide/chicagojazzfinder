@@ -3533,6 +3533,189 @@
     }
   }
 
+  (function setupDateCalendarPicker() {
+    var btn = document.getElementById('date-calendar-btn');
+    var popover = document.getElementById('date-calendar-popover');
+    var grid = document.getElementById('date-calendar-grid');
+    var titleEl = document.getElementById('date-calendar-title');
+    var prevBtn = document.getElementById('date-calendar-prev');
+    var nextBtn = document.getElementById('date-calendar-next');
+    var hiddenSelect = document.getElementById('date-jump');
+    if (!btn || !popover || !grid || !titleEl || !prevBtn || !nextBtn) return;
+
+    var selectedDate = '';
+    var visibleMonth = null;
+    var availableDates = [];
+    var availableLookup = {};
+    var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    function monthKey(dateObj) {
+      return dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
+    }
+
+    function parseDate(isoDate) {
+      var parts = parseIsoDateParts(isoDate);
+      if (!parts) return null;
+      return new Date(parts.year, parts.month - 1, parts.day);
+    }
+
+    function collectAvailableDates() {
+      var seen = {};
+      availableDates = Array.from(document.querySelectorAll('.day-block')).map(function(block) {
+        return block.dataset.date || '';
+      }).filter(function(date) {
+        if (!date || seen[date]) return false;
+        seen[date] = true;
+        return true;
+      }).sort();
+      availableLookup = {};
+      availableDates.forEach(function(date) { availableLookup[date] = true; });
+    }
+
+    function choosePreferredDate() {
+      var today = getDynamicTodayStr();
+      if (availableLookup[today]) return today;
+      if (selectedDate && selectedDate >= today && availableLookup[selectedDate]) return selectedDate;
+      for (var i = 0; i < availableDates.length; i += 1) {
+        if (availableDates[i] >= today) return availableDates[i];
+      }
+      return availableDates.length ? availableDates[availableDates.length - 1] : '';
+    }
+
+    function setVisibleMonthFromDate(isoDate) {
+      var parsed = parseDate(isoDate);
+      if (!parsed) parsed = new Date();
+      visibleMonth = new Date(parsed.getFullYear(), parsed.getMonth(), 1);
+    }
+
+    function updateButtonLabel() {
+      btn.textContent = 'Calendar';
+    }
+
+    function scrollToDate(isoDate) {
+      var block = document.querySelector('.day-block[data-date="' + isoDate + '"]');
+      if (!block) return;
+      if (block.classList.contains('past-day') && block.offsetParent === null) {
+        var toggle = document.getElementById('past-toggle');
+        if (toggle) toggle.click();
+      }
+      block.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (typeof window.updateFloatingDayHeader === 'function') {
+        requestAnimationFrame(window.updateFloatingDayHeader);
+      }
+    }
+
+    function closePopover() {
+      popover.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    function openPopover() {
+      window.refreshDateCalendarPicker();
+      popover.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+    }
+
+    function renderCalendar() {
+      collectAvailableDates();
+      if (!availableDates.length) {
+        selectedDate = '';
+        visibleMonth = new Date();
+        btn.disabled = true;
+        updateButtonLabel();
+        grid.innerHTML = '';
+        titleEl.textContent = 'No dates';
+        return;
+      }
+      btn.disabled = false;
+      if (!selectedDate || !availableLookup[selectedDate]) selectedDate = choosePreferredDate();
+      if (!visibleMonth) setVisibleMonthFromDate(selectedDate || availableDates[0]);
+
+      var today = getDynamicTodayStr();
+      var firstAvailable = parseDate(availableDates[0]);
+      var lastAvailable = parseDate(availableDates[availableDates.length - 1]);
+      var firstMonth = new Date(firstAvailable.getFullYear(), firstAvailable.getMonth(), 1);
+      var lastMonth = new Date(lastAvailable.getFullYear(), lastAvailable.getMonth(), 1);
+      if (visibleMonth < firstMonth) visibleMonth = new Date(firstMonth.getTime());
+      if (visibleMonth > lastMonth) visibleMonth = new Date(lastMonth.getTime());
+
+      titleEl.textContent = monthNames[visibleMonth.getMonth()] + ' ' + visibleMonth.getFullYear();
+      prevBtn.disabled = monthKey(visibleMonth) <= monthKey(firstMonth);
+      nextBtn.disabled = monthKey(visibleMonth) >= monthKey(lastMonth);
+      grid.innerHTML = '';
+
+      var firstDay = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1).getDay();
+      var daysInMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0).getDate();
+      for (var blank = 0; blank < firstDay; blank += 1) {
+        var spacer = document.createElement('span');
+        spacer.className = 'date-calendar-blank';
+        grid.appendChild(spacer);
+      }
+      for (var day = 1; day <= daysInMonth; day += 1) {
+        var iso = visibleMonth.getFullYear() + '-' + String(visibleMonth.getMonth() + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        var dayBtn = document.createElement('button');
+        dayBtn.type = 'button';
+        dayBtn.className = 'date-calendar-day';
+        dayBtn.textContent = String(day);
+        dayBtn.disabled = !availableLookup[iso];
+        dayBtn.dataset.date = iso;
+        if (iso === today) dayBtn.classList.add('is-today');
+        if (iso === selectedDate) dayBtn.classList.add('is-selected');
+        if (iso < today) dayBtn.classList.add('is-past');
+        grid.appendChild(dayBtn);
+      }
+      updateButtonLabel();
+    }
+
+    window.refreshDateCalendarPicker = function() {
+      var previousSelected = selectedDate;
+      collectAvailableDates();
+      selectedDate = choosePreferredDate();
+      if (previousSelected && previousSelected >= getDynamicTodayStr() && availableLookup[previousSelected]) {
+        selectedDate = previousSelected;
+      }
+      if (hiddenSelect && selectedDate && hiddenSelect.querySelector('option[value="' + selectedDate + '"]')) {
+        hiddenSelect.value = selectedDate;
+      }
+      setVisibleMonthFromDate(selectedDate || availableDates[0]);
+      renderCalendar();
+    };
+
+    btn.addEventListener('click', function(event) {
+      event.stopPropagation();
+      if (popover.hidden) openPopover();
+      else closePopover();
+    });
+    prevBtn.addEventListener('click', function(event) {
+      event.stopPropagation();
+      visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1);
+      renderCalendar();
+    });
+    nextBtn.addEventListener('click', function(event) {
+      event.stopPropagation();
+      visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+      renderCalendar();
+    });
+    grid.addEventListener('click', function(event) {
+      var dayBtn = event.target.closest('.date-calendar-day');
+      if (!dayBtn || dayBtn.disabled) return;
+      selectedDate = dayBtn.dataset.date || '';
+      if (hiddenSelect) hiddenSelect.value = selectedDate;
+      renderCalendar();
+      closePopover();
+      scrollToDate(selectedDate);
+    });
+    popover.addEventListener('click', function(event) {
+      event.stopPropagation();
+    });
+    document.addEventListener('click', closePopover);
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') closePopover();
+    });
+
+    window.refreshDateCalendarPicker();
+  })();
+
   async function renderApprovedSubmissions() {
     var supabaseTools = window.CJFSupabase;
     if (!supabaseTools) return;
@@ -3683,6 +3866,9 @@
       window.refreshJazzPastDays();
     }
     refreshDateJump();
+    if (typeof window.refreshDateCalendarPicker === 'function') {
+      window.refreshDateCalendarPicker();
+    }
     if (typeof window.refreshVenueFilters === 'function') {
       window.refreshVenueFilters(true);
     }
@@ -3693,6 +3879,8 @@
 
   renderApprovedSubmissions();
 })();
+
+
 
 
 
