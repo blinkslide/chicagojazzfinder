@@ -13,7 +13,7 @@
 <script src="supabase/supabase-config.js"></script>
 <script src="supabase/supabase-client.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link rel="stylesheet" href="jazztest.css?v=20260531a">
+<link rel="stylesheet" href="jazztest.css?v=20260604b">
 </head>
 <body>
 <div class="masthead">
@@ -25,9 +25,23 @@
       <div class="filter-top-row">
         <button class="util-btn" id="free-toggle">Free only</button>
         <button class="util-btn" id="reset-btn">Reset</button>
-        <select id="date-jump" class="util-select">
+        <select id="date-jump" class="util-select legacy-date-jump" aria-hidden="true" tabindex="-1">
           <option value="">? Date</option>
         </select>
+        <div class="date-calendar-shell">
+          <button class="util-btn date-calendar-btn" id="date-calendar-btn" type="button" aria-haspopup="dialog" aria-expanded="false">Calendar</button>
+          <div class="date-calendar-popover" id="date-calendar-popover" role="dialog" aria-label="Select calendar date" hidden>
+            <div class="date-calendar-head">
+              <button class="date-calendar-nav" id="date-calendar-prev" type="button" aria-label="Previous month">&#8249;</button>
+              <div class="date-calendar-title" id="date-calendar-title"></div>
+              <button class="date-calendar-nav" id="date-calendar-next" type="button" aria-label="Next month">&#8250;</button>
+            </div>
+            <div class="date-calendar-weekdays" aria-hidden="true">
+              <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+            </div>
+            <div class="date-calendar-grid" id="date-calendar-grid"></div>
+          </div>
+        </div>
         <button class="map-sq-btn" id="map-toggle-btn">&#x1F4CD;<span>Map</span></button>
       </div>
       <div class="filter-venue-row">
@@ -6443,6 +6457,7 @@
               <option>SPACE Evanston</option>
               <option>Gale Street Inn</option>
               <option>Dorian's</option>
+              <option>Gallery Cabaret</option>
               <option>Symphony Center</option>
               <option>Jazz at Logan</option>
             </select>
@@ -6485,6 +6500,7 @@
             <option>SPACE Evanston</option>
             <option>Gale Street Inn</option>
             <option>Dorian's</option>
+            <option>Gallery Cabaret</option>
             <option>Symphony Center</option>
             <option>Jazz at Logan</option>
           </select>
@@ -6572,6 +6588,7 @@
     </div>
   </div>
 </div>
-<script src="jazztest.js?v=20260531a"></script>
+<script src="jazztest.js?v=20260604b"></script>
 </body>
 </html>
+
