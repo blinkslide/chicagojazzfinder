@@ -8,6 +8,7 @@
     if (lower.indexOf('garcia') !== -1) return "Garcia's Chicago";
     if (lower.indexOf('fitzgerald') !== -1) return "Fitzgerald's Nightclub";
     if (lower.indexOf('gale street') !== -1) return "Gale Street Inn";
+    if (lower.indexOf('gallery cabaret') !== -1 || lower.indexOf('the gallery cabaret') !== -1) return "Gallery Cabaret";
     if (lower.indexOf('dorian') !== -1 || lower.indexOf('through the record shop') !== -1) return "Dorian's";
     if (lower.indexOf('scp jazz') !== -1 || lower.indexOf('symphony center presents') !== -1 || lower === 'symphony center' || lower.indexOf('chicago symphony center') !== -1) {
       return "Symphony Center";
@@ -39,6 +40,7 @@
     "SPACE Evanston",
     "Gale Street Inn",
     "Dorian's",
+    "Gallery Cabaret",
     "Symphony Center",
     "Jazz at Logan"
   ];
@@ -61,6 +63,7 @@
     "SPACE Evanston": "SPACE",
     "Gale Street Inn": "Gale Street",
     "Dorian's": "Dorian's",
+    "Gallery Cabaret": "Gallery",
     "Symphony Center": "Symphony Center",
     "Jazz at Logan": "Jazz at Logan"
   };
@@ -82,6 +85,7 @@
     "SPACE Evanston": "#0f8f8c",
     "Gale Street Inn": "#4f6fd3",
     "Dorian's": "#b68a35",
+    "Gallery Cabaret": "#8b5cf6",
     "Symphony Center": "#1a365d",
     "Jazz at Logan": "#a54b1a",
     "Venue TBA": "#5a4e3a"
@@ -110,7 +114,8 @@
     "Fitzgerald's Nightclub",
     "SPACE Evanston",
     "Gale Street Inn",
-    "Dorian's"
+    "Dorian's",
+    "Gallery Cabaret"
   ];
   function hashVenueName(name) {
     var value = String(name || '');
@@ -827,7 +832,7 @@
     venueNotListedBlock.style.display = (visibleVenueInput.value === '__not_listed') ? '' : 'none';
   }
 
-  var SUBMISSION_LISTED_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's Jazz Club", "Constellation", "Elastic Arts", "The Whistler", "Hungry Brain", "Lemon", "Le Piano", "Fulton Street Collective", "Clara Chicago", "Garcia's Chicago", "Fitzgerald's Nightclub", "SPACE Evanston", "Gale Street Inn", "Dorian's", "Symphony Center", "Jazz at Logan"];
+  var SUBMISSION_LISTED_VENUES = ["Andy's Jazz Club", "Green Mill", "Jazz Showcase", "Winter's Jazz Club", "Constellation", "Elastic Arts", "The Whistler", "Hungry Brain", "Lemon", "Le Piano", "Fulton Street Collective", "Clara Chicago", "Garcia's Chicago", "Fitzgerald's Nightclub", "SPACE Evanston", "Gale Street Inn", "Dorian's", "Gallery Cabaret", "Symphony Center", "Jazz at Logan"];
   var submissionVenueColors = {
     "Andy's Jazz Club": "#b45309",
     "Green Mill": "#00a651",
@@ -846,6 +851,7 @@
     "SPACE Evanston": "#0f8f8c",
     "Gale Street Inn": "#4f6fd3",
     "Dorian's": "#b68a35",
+    "Gallery Cabaret": "#8b5cf6",
     "Symphony Center": "#1a365d",
     "Jazz at Logan": "#a54b1a"
   };
@@ -1404,6 +1410,7 @@
     {"name": "SPACE Evanston", "initials": "Spc", "addr": "1245 Chicago Avenue, Evanston, IL 60202", "lat": 42.040884, "lng": -87.680254, "color": "#0f8f8c", "maps_url": "https://maps.google.com/?q=1245+Chicago+Avenue+Evanston+IL", "label_dir": "right", "label_offset": [14, -2]},
     {"name": "Gale Street Inn", "initials": "GSI", "addr": "4914 N Milwaukee Ave, Chicago, IL 60630", "lat": 41.9703, "lng": -87.7643, "color": "#4f6fd3", "maps_url": "https://maps.google.com/?q=4914+N+Milwaukee+Ave+Chicago+IL", "label_dir": "right", "label_offset": [14, 4]},
     {"name": "Dorian's", "initials": "Dor", "addr": "1939 W North Ave, Chicago, IL 60622", "lat": 41.9103, "lng": -87.6772, "color": "#b68a35", "maps_url": "https://maps.google.com/?q=1939+W+North+Ave+Chicago+IL", "label_dir": "left", "label_offset": [-18, -4]},
+    {"name": "Gallery Cabaret", "initials": "Gal", "addr": "2020 N Oakley Ave, Chicago, IL 60647", "lat": 41.9187, "lng": -87.6847, "color": "#8b5cf6", "maps_url": "https://maps.google.com/?q=2020+N+Oakley+Ave+Chicago+IL", "label_dir": "right", "label_offset": [14, -2]},
     {"name": "Symphony Center", "initials": "SC", "addr": "220 S Michigan Ave, Chicago, IL 60604", "lat": 41.8794, "lng": -87.6247, "color": "#1a365d", "maps_url": "https://maps.google.com/?q=220+S+Michigan+Ave+Chicago+IL", "label_dir": "right", "label_offset": [14, -8]},
     {"name": "Jazz at Logan", "initials": "JL", "addr": "915 E 60th St, Chicago, IL 60637", "lat": 41.7857, "lng": -87.6035, "color": "#a54b1a", "maps_url": "https://maps.google.com/?q=915+E+60th+St+Chicago+IL", "label_dir": "left", "label_offset": [-18, 0]}
   ];
@@ -2259,6 +2266,7 @@
     {"name": "Fitzgerald's Nightclub", "initials": "Fitz", "addr": "6615 Roosevelt Rd, Berwyn, IL 60402", "lat": 41.8652, "lng": -87.7882, "color": "#d65d36", "maps_url": "https://maps.google.com/?q=6615+Roosevelt+Rd+Berwyn+IL", "label_dir": "left", "label_offset": [-18, 0]},
     {"name": "SPACE Evanston", "initials": "Spc", "addr": "1245 Chicago Avenue, Evanston, IL 60202", "lat": 42.040884, "lng": -87.680254, "color": "#0f8f8c", "maps_url": "https://maps.google.com/?q=1245+Chicago+Avenue+Evanston+IL", "label_dir": "right", "label_offset": [14, -2]},
     {"name": "Gale Street Inn", "initials": "GSI", "addr": "4914 N Milwaukee Ave, Chicago, IL 60630", "lat": 41.9703, "lng": -87.7643, "color": "#4f6fd3", "maps_url": "https://maps.google.com/?q=4914+N+Milwaukee+Ave+Chicago+IL", "label_dir": "right", "label_offset": [14, 4]},
+    {"name": "Gallery Cabaret", "initials": "Gal", "addr": "2020 N Oakley Ave, Chicago, IL 60647", "lat": 41.9187, "lng": -87.6847, "color": "#8b5cf6", "maps_url": "https://maps.google.com/?q=2020+N+Oakley+Ave+Chicago+IL", "label_dir": "right", "label_offset": [14, -2]},
     {"name": "Symphony Center", "initials": "SC", "addr": "220 S Michigan Ave, Chicago, IL 60604", "lat": 41.8794, "lng": -87.6247, "color": "#1a365d", "maps_url": "https://maps.google.com/?q=220+S+Michigan+Ave+Chicago+IL", "label_dir": "right", "label_offset": [14, -8]},
     {"name": "Jazz at Logan", "initials": "JL", "addr": "915 E 60th St, Chicago, IL 60637", "lat": 41.7857, "lng": -87.6035, "color": "#a54b1a", "maps_url": "https://maps.google.com/?q=915+E+60th+St+Chicago+IL", "label_dir": "left", "label_offset": [-18, 0]}
   ];
